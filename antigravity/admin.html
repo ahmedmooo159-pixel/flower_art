@@ -1370,6 +1370,53 @@
   </div>
 
   <!-- ==========================================
+       SUPABASE DATA LAYER
+       ========================================== -->
+  <script>
+    const SUPABASE_URL = 'https://vuxsbzvkfcozwlutwefc.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1eHNienZrZmNvendsdXR3ZWZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjE2MDMsImV4cCI6MjA5ODEzNzYwM30.ujV8I4gibeHfmeX4yRqVRwbJTGdokGdScMEc0D7ytOo';
+
+    const DB_HEADERS = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    };
+
+    async function dbGet(key) {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/site_data?key=eq.${encodeURIComponent(key)}&select=value`,
+          { headers: DB_HEADERS }
+        );
+        if (!res.ok) throw new Error('fetch failed');
+        const rows = await res.json();
+        return rows.length ? rows[0].value : null;
+      } catch (e) {
+        console.error('dbGet error:', e);
+        return null;
+      }
+    }
+
+    async function dbSet(key, value) {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/site_data`,
+          {
+            method: 'POST',
+            headers: { ...DB_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+            body: JSON.stringify({ key, value })
+          }
+        );
+        if (!res.ok) throw new Error(await res.text());
+        return true;
+      } catch (e) {
+        console.error('dbSet error:', e);
+        return false;
+      }
+    }
+  </script>
+
+  <!-- ==========================================
        ADMIN PANEL JAVASCRIPT
        ========================================== -->
   <script>
@@ -1440,25 +1487,21 @@
         paypal: true
       },
 
-      init() {
-        this.checkAuth();
+      async init() {
+        await this.checkAuth();
         this.bindLogin();
         this.bindLogout();
         this.bindSidebarNav();
         this.bindLanguageToggle();
         this.bindMobileSidebar();
-        
-        // Initial setup for color Pickers
         this.initColorPickers();
-
-        // Load data on panel
-        this.loadAllPanels();
+        await this.loadAllPanels();
       },
 
-      checkAuth() {
-        // Retrieve custom settings for password check
-        const settings = this.getData('site_settings', this.defaultSettings);
-        this.correctPassword = settings.password || 'fatma2026';
+      async checkAuth() {
+        // جلب كلمة المرور من Supabase
+        const settings = await dbGet('site_settings');
+        this.correctPassword = (settings && settings.password) ? settings.password : 'fatma2026';
 
         const isAuthed = sessionStorage.getItem('admin_auth') === 'true';
         if (isAuthed) {
@@ -1475,7 +1518,7 @@
         const passwordInput = document.getElementById('admin-password-input');
         const errorDiv = document.getElementById('admin-error');
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const enteredPassword = passwordInput.value.trim();
           
@@ -1593,46 +1636,42 @@
         }, 3000);
       },
 
-      getData(key, defaultData) {
-        const val = localStorage.getItem(key);
-        if (!val) {
-          this.setData(key, defaultData);
+      // getData و setData أصبحا async مع Supabase
+      async getData(key, defaultData) {
+        let val = await dbGet(key);
+        if (val === null) {
+          await dbSet(key, defaultData);
           return defaultData;
         }
-        try {
-          return JSON.parse(val);
-        } catch(e) {
-          return defaultData;
-        }
+        return val;
       },
 
-      setData(key, data) {
-        localStorage.setItem(key, JSON.stringify(data));
+      async setData(key, data) {
+        await dbSet(key, data);
       },
 
-      loadAllPanels() {
-        this.renderOverviewPanel();
-        this.loadGalleryPanel();
-        this.loadCoursesPanel();
-        this.loadReviewsPanel();
-        this.loadFAQPanel();
-        this.loadPaymentsPanel();
+      async loadAllPanels() {
+        await this.renderOverviewPanel();
+        await this.loadGalleryPanel();
+        await this.loadCoursesPanel();
+        await this.loadReviewsPanel();
+        await this.loadFAQPanel();
+        await this.loadPaymentsPanel();
         this.loadColorsPanel();
-        this.loadSettingsPanel();
+        await this.loadSettingsPanel();
       },
 
       // --- PANEL 1: OVERVIEW ---
-      renderOverviewPanel() {
-        const students = this.getData('students_count', 500);
-        const courses = this.getData('courses_data', this.defaultCourses);
-        const artworks = this.getData('artworks_data', this.defaultArtworks);
-        const reviews = this.getData('reviews_data', this.defaultReviews);
+      async renderOverviewPanel() {
+        const students = await this.getData('students_count', 500);
+        const courses  = await this.getData('courses_data', this.defaultCourses);
+        const artworks = await this.getData('artworks_data', this.defaultArtworks);
+        const reviews  = await this.getData('reviews_data', this.defaultReviews);
 
         document.getElementById('stat-students').textContent = students;
         document.getElementById('stat-courses').textContent = courses.length;
         document.getElementById('stat-artworks').textContent = artworks.length;
 
-        // Calculate average rating
         let sum = 0;
         reviews.forEach(r => sum += parseInt(r.rating || 5));
         const avg = reviews.length > 0 ? (sum / reviews.length).toFixed(1) : '0.0';
@@ -1640,8 +1679,8 @@
       },
 
       // --- PANEL 2: ARTWORK GALLERY ---
-      loadGalleryPanel() {
-        const artworks = this.getData('artworks_data', this.defaultArtworks);
+      async loadGalleryPanel() {
+        const artworks = await this.getData('artworks_data', this.defaultArtworks);
         const tbody = document.querySelector('#gallery-table tbody');
         tbody.innerHTML = '';
 
@@ -1708,7 +1747,7 @@
         document.getElementById('gallery-image').value = 'assets/artwork-placeholder.jpg';
       },
 
-      saveArtwork() {
+      async saveArtwork() {
         const id = document.getElementById('gallery-edit-id').value;
         const titleEn = document.getElementById('gallery-title-en').value.trim();
         const titleAr = document.getElementById('gallery-title-ar').value.trim();
@@ -1717,10 +1756,9 @@
         const ratio = document.getElementById('gallery-ratio').value;
         const image = document.getElementById('gallery-image').value.trim();
 
-        let artworks = this.getData('artworks_data', this.defaultArtworks);
+        let artworks = await this.getData('artworks_data', this.defaultArtworks);
 
         if (id) {
-          // Edit mode
           artworks = artworks.map(art => {
             if (art.id === parseInt(id)) {
               return { ...art, titleEn, titleAr, categoryEn, categoryAr, ratio, image };
@@ -1729,28 +1767,19 @@
           });
           this.showToast('Artwork updated successfully!', 'success');
         } else {
-          // Add mode
-          const newArt = {
-            id: Date.now(),
-            titleEn,
-            titleAr,
-            categoryEn,
-            categoryAr,
-            ratio,
-            image
-          };
+          const newArt = { id: Date.now(), titleEn, titleAr, categoryEn, categoryAr, ratio, image };
           artworks.push(newArt);
           this.showToast('Artwork added successfully!', 'success');
         }
 
-        this.setData('artworks_data', artworks);
+        await this.setData('artworks_data', artworks);
         this.resetGalleryForm();
-        this.loadGalleryPanel();
-        this.renderOverviewPanel();
+        await this.loadGalleryPanel();
+        await this.renderOverviewPanel();
       },
 
-      editArtwork(id) {
-        const artworks = this.getData('artworks_data', this.defaultArtworks);
+      async editArtwork(id) {
+        const artworks = await this.getData('artworks_data', this.defaultArtworks);
         const art = artworks.find(a => a.id === id);
         if (!art) return;
 
@@ -1765,19 +1794,19 @@
         document.getElementById('gallery-cancel-btn').style.display = 'inline-block';
       },
 
-      deleteArtwork(id) {
+      async deleteArtwork(id) {
         if (!confirm('Are you sure you want to delete this artwork?')) return;
-        let artworks = this.getData('artworks_data', this.defaultArtworks);
+        let artworks = await this.getData('artworks_data', this.defaultArtworks);
         artworks = artworks.filter(art => art.id !== id);
-        this.setData('artworks_data', artworks);
+        await this.setData('artworks_data', artworks);
         this.showToast('Artwork deleted successfully!', 'success');
-        this.loadGalleryPanel();
-        this.renderOverviewPanel();
+        await this.loadGalleryPanel();
+        await this.renderOverviewPanel();
       },
 
       // --- PANEL 3: COURSES ---
-      loadCoursesPanel() {
-        const courses = this.getData('courses_data', this.defaultCourses);
+      async loadCoursesPanel() {
+        const courses = await this.getData('courses_data', this.defaultCourses);
         const tbody = document.querySelector('#courses-table tbody');
         tbody.innerHTML = '';
 
@@ -1842,7 +1871,7 @@
         document.getElementById('course-image').value = 'assets/artwork-placeholder.jpg';
       },
 
-      saveCourse() {
+      async saveCourse() {
         const id = document.getElementById('course-edit-id').value;
         const titleEn = document.getElementById('course-title-en').value.trim();
         const titleAr = document.getElementById('course-title-ar').value.trim();
@@ -1854,10 +1883,9 @@
         const badgeAr = document.getElementById('course-badge-ar').value.trim();
         const image = document.getElementById('course-image').value.trim();
 
-        let courses = this.getData('courses_data', this.defaultCourses);
+        let courses = await this.getData('courses_data', this.defaultCourses);
 
         if (id) {
-          // Edit Mode
           courses = courses.map(c => {
             if (c.id === parseInt(id)) {
               return { ...c, titleEn, titleAr, levelEn, levelAr, duration, price, badgeEn, badgeAr, image };
@@ -1866,31 +1894,18 @@
           });
           this.showToast('Course updated successfully!', 'success');
         } else {
-          // Add Mode
-          const newCourse = {
-            id: Date.now(),
-            titleEn,
-            titleAr,
-            levelEn,
-            levelAr,
-            duration,
-            price,
-            badgeEn,
-            badgeAr,
-            image
-          };
-          courses.push(newCourse);
+          courses.push({ id: Date.now(), titleEn, titleAr, levelEn, levelAr, duration, price, badgeEn, badgeAr, image });
           this.showToast('Course added successfully!', 'success');
         }
 
-        this.setData('courses_data', courses);
+        await this.setData('courses_data', courses);
         this.resetCourseForm();
-        this.loadCoursesPanel();
-        this.renderOverviewPanel();
+        await this.loadCoursesPanel();
+        await this.renderOverviewPanel();
       },
 
-      editCourse(id) {
-        const courses = this.getData('courses_data', this.defaultCourses);
+      async editCourse(id) {
+        const courses = await this.getData('courses_data', this.defaultCourses);
         const c = courses.find(item => item.id === id);
         if (!c) return;
 
@@ -1908,19 +1923,19 @@
         document.getElementById('course-cancel-btn').style.display = 'inline-block';
       },
 
-      deleteCourse(id) {
+      async deleteCourse(id) {
         if (!confirm('Are you sure you want to delete this course?')) return;
-        let courses = this.getData('courses_data', this.defaultCourses);
+        let courses = await this.getData('courses_data', this.defaultCourses);
         courses = courses.filter(c => c.id !== id);
-        this.setData('courses_data', courses);
+        await this.setData('courses_data', courses);
         this.showToast('Course deleted successfully!', 'success');
-        this.loadCoursesPanel();
-        this.renderOverviewPanel();
+        await this.loadCoursesPanel();
+        await this.renderOverviewPanel();
       },
 
       // --- PANEL 4: REVIEWS ---
-      loadReviewsPanel() {
-        const reviews = this.getData('reviews_data', this.defaultReviews);
+      async loadReviewsPanel() {
+        const reviews = await this.getData('reviews_data', this.defaultReviews);
         const tbody = document.querySelector('#reviews-table tbody');
         tbody.innerHTML = '';
 
@@ -1957,7 +1972,7 @@
         };
       },
 
-      saveReview() {
+      async saveReview() {
         const name = document.getElementById('review-name').value.trim();
         const rating = parseInt(document.getElementById('review-rating').value);
         const courseEn = document.getElementById('review-course-en').value.trim();
@@ -1965,39 +1980,29 @@
         const quoteEn = document.getElementById('review-quote-en').value.trim();
         const quoteAr = document.getElementById('review-quote-ar').value.trim();
 
-        const reviews = this.getData('reviews_data', this.defaultReviews);
-        const newReview = {
-          id: Date.now(),
-          name,
-          rating,
-          courseEn,
-          courseAr,
-          quoteEn,
-          quoteAr
-        };
-
-        reviews.push(newReview);
-        this.setData('reviews_data', reviews);
+        const reviews = await this.getData('reviews_data', this.defaultReviews);
+        reviews.push({ id: Date.now(), name, rating, courseEn, courseAr, quoteEn, quoteAr });
+        await this.setData('reviews_data', reviews);
         this.showToast('Review added successfully!', 'success');
 
         document.getElementById('reviews-form').reset();
-        this.loadReviewsPanel();
-        this.renderOverviewPanel();
+        await this.loadReviewsPanel();
+        await this.renderOverviewPanel();
       },
 
-      deleteReview(id) {
+      async deleteReview(id) {
         if (!confirm('Are you sure you want to delete this review?')) return;
-        let reviews = this.getData('reviews_data', this.defaultReviews);
+        let reviews = await this.getData('reviews_data', this.defaultReviews);
         reviews = reviews.filter(r => r.id !== id);
-        this.setData('reviews_data', reviews);
+        await this.setData('reviews_data', reviews);
         this.showToast('Review deleted successfully!', 'success');
-        this.loadReviewsPanel();
-        this.renderOverviewPanel();
+        await this.loadReviewsPanel();
+        await this.renderOverviewPanel();
       },
 
       // --- PANEL 5: FAQ ---
-      loadFAQPanel() {
-        const faqs = this.getData('faq_data', this.defaultFaqs);
+      async loadFAQPanel() {
+        const faqs = await this.getData('faq_data', this.defaultFaqs);
         const tbody = document.querySelector('#faq-table tbody');
         tbody.innerHTML = '';
 
@@ -2032,41 +2037,33 @@
         };
       },
 
-      saveFAQ() {
+      async saveFAQ() {
         const questionEn = document.getElementById('faq-question-en').value.trim();
         const questionAr = document.getElementById('faq-question-ar').value.trim();
         const answerEn = document.getElementById('faq-answer-en').value.trim();
         const answerAr = document.getElementById('faq-answer-ar').value.trim();
 
-        const faqs = this.getData('faq_data', this.defaultFaqs);
-        const newFAQ = {
-          id: Date.now(),
-          questionEn,
-          questionAr,
-          answerEn,
-          answerAr
-        };
-
-        faqs.push(newFAQ);
-        this.setData('faq_data', faqs);
+        const faqs = await this.getData('faq_data', this.defaultFaqs);
+        faqs.push({ id: Date.now(), questionEn, questionAr, answerEn, answerAr });
+        await this.setData('faq_data', faqs);
         this.showToast('FAQ added successfully!', 'success');
 
         document.getElementById('faq-form').reset();
-        this.loadFAQPanel();
+        await this.loadFAQPanel();
       },
 
-      deleteFAQ(id) {
+      async deleteFAQ(id) {
         if (!confirm('Are you sure you want to delete this FAQ?')) return;
-        let faqs = this.getData('faq_data', this.defaultFaqs);
+        let faqs = await this.getData('faq_data', this.defaultFaqs);
         faqs = faqs.filter(faq => faq.id !== id);
-        this.setData('faq_data', faqs);
+        await this.setData('faq_data', faqs);
         this.showToast('FAQ deleted successfully!', 'success');
-        this.loadFAQPanel();
+        await this.loadFAQPanel();
       },
 
       // --- PANEL 6: PAYMENTS ---
-      loadPaymentsPanel() {
-        const config = this.getData('payment_methods_config', this.defaultPayments);
+      async loadPaymentsPanel() {
+        const config = await this.getData('payment_methods_config', this.defaultPayments);
 
         document.getElementById('pay-toggle-bank').checked = !!config.bank;
         document.getElementById('pay-toggle-mada').checked = !!config.mada;
@@ -2076,7 +2073,7 @@
         document.getElementById('pay-toggle-paypal').checked = !!config.paypal;
 
         const saveBtn = document.getElementById('save-payments-btn');
-        saveBtn.onclick = () => {
+        saveBtn.onclick = async () => {
           const newConfig = {
             bank: document.getElementById('pay-toggle-bank').checked,
             mada: document.getElementById('pay-toggle-mada').checked,
@@ -2085,7 +2082,7 @@
             stc: document.getElementById('pay-toggle-stc').checked,
             paypal: document.getElementById('pay-toggle-paypal').checked
           };
-          this.setData('payment_methods_config', newConfig);
+          await this.setData('payment_methods_config', newConfig);
           this.showToast('Payment config saved successfully!', 'success');
         };
       },
@@ -2111,8 +2108,8 @@
         });
       },
 
-      loadColorsPanel() {
-        const custom = this.getData('custom_colors', {});
+      async loadColorsPanel() {
+        const custom = await this.getData('custom_colors', {});
         
         const primaryBg = custom['--bg-primary'] || '#FDF6F0';
         const secondaryBg = custom['--bg-secondary'] || '#FAF0E8';
@@ -2121,7 +2118,6 @@
         const textPrimary = custom['--text-primary'] || '#2C1810';
         const textSecondary = custom['--text-secondary'] || '#6B4C3B';
 
-        // Apply values to inputs
         this.updateColorInput('bg-primary', primaryBg);
         this.updateColorInput('bg-secondary', secondaryBg);
         this.updateColorInput('accent-blue', accentBlue);
@@ -2129,8 +2125,7 @@
         this.updateColorInput('text-primary', textPrimary);
         this.updateColorInput('text-secondary', textSecondary);
 
-        // Preview button
-        document.getElementById('preview-colors-btn').onclick = () => {
+        document.getElementById('preview-colors-btn').onclick = async () => {
           const colors = {
             '--bg-primary': document.getElementById('hex-bg-primary').value,
             '--bg-secondary': document.getElementById('hex-bg-secondary').value,
@@ -2139,18 +2134,15 @@
             '--text-primary': document.getElementById('hex-text-primary').value,
             '--text-secondary': document.getElementById('hex-text-secondary').value
           };
-          this.setData('custom_colors', colors);
+          await this.setData('custom_colors', colors);
           this.applyColors(colors);
           this.showToast('Colors preview applied live!', 'success');
         };
 
-        // Reset button
-        document.getElementById('reset-colors-btn').onclick = () => {
-          localStorage.removeItem('custom_colors');
+        document.getElementById('reset-colors-btn').onclick = async () => {
+          await this.setData('custom_colors', {});
           this.showToast('Colors reset to defaults. Reloading...', 'success');
-          setTimeout(() => {
-            window.location.reload();
-          }, 800);
+          setTimeout(() => { window.location.reload(); }, 800);
         };
       },
 
@@ -2166,8 +2158,8 @@
       },
 
       // --- PANEL 8: SETTINGS ---
-      loadSettingsPanel() {
-        const settings = this.getData('site_settings', this.defaultSettings);
+      async loadSettingsPanel() {
+        const settings = await this.getData('site_settings', this.defaultSettings);
 
         document.getElementById('set-title-en').value = settings.titleEn || this.defaultSettings.titleEn;
         document.getElementById('set-title-ar').value = settings.titleAr || this.defaultSettings.titleAr;
@@ -2181,7 +2173,7 @@
         document.getElementById('set-copyright-ar').value = settings.copyrightAr || this.defaultSettings.copyrightAr;
 
         const form = document.getElementById('settings-form');
-        form.onsubmit = (e) => {
+        form.onsubmit = async (e) => {
           e.preventDefault();
           const newSettings = {
             titleEn: document.getElementById('set-title-en').value.trim(),
@@ -2195,24 +2187,20 @@
             copyrightEn: document.getElementById('set-copyright-en').value.trim(),
             copyrightAr: document.getElementById('set-copyright-ar').value.trim()
           };
-          this.setData('site_settings', newSettings);
+          await this.setData('site_settings', newSettings);
           this.showToast('Settings saved successfully!', 'success');
-          // Refresh auth config password
           this.correctPassword = newSettings.password;
         };
       }
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      AdminApp.init();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await AdminApp.init();
 
-      // Check if custom colors are already saved and apply them to preview
-      const savedColors = localStorage.getItem('custom_colors');
-      if (savedColors) {
-        try {
-          const colors = JSON.parse(savedColors);
-          AdminApp.applyColors(colors);
-        } catch(e){}
+      // تطبيق الألوان المحفوظة من Supabase
+      const savedColors = await dbGet('custom_colors');
+      if (savedColors && Object.keys(savedColors).length > 0) {
+        AdminApp.applyColors(savedColors);
       }
     });
   </script>
