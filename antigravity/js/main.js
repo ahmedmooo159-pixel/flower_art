@@ -1,3 +1,28 @@
+/* ==========================================
+   SUPABASE DATA LAYER (للقراءة في الصفحات العادية)
+   ========================================== */
+const SUPABASE_URL = 'https://vuxsbzvkfcozwlutwefc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1eHNienZrZmNvendsdXR3ZWZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjE2MDMsImV4cCI6MjA5ODEzNzYwM30.ujV8I4gibeHfmeX4yRqVRwbJTGdokGdScMEc0D7ytOo';
+
+async function dbRead(key) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/site_data?key=eq.${encodeURIComponent(key)}&select=value`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? rows[0].value : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 let floatItems = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollParallax();
   initPetals();
   initMuseumDecorations();
+
+  // تحميل البيانات من Supabase وتطبيقها على الصفحة
+  loadSiteDataFromDB();
 });
 
 /* ==========================================
@@ -845,4 +873,195 @@ function buildWaveDivider(hero) {
   `;
   
   hero.parentNode.insertBefore(divider, hero.nextSibling);
+}
+
+/* ==========================================
+   تحميل البيانات من Supabase وتطبيقها على كل صفحة
+   ========================================== */
+async function loadSiteDataFromDB() {
+  // 1) تطبيق الألوان المخصصة
+  const colors = await dbRead('custom_colors');
+  if (colors && Object.keys(colors).length > 0) {
+    for (const [key, value] of Object.entries(colors)) {
+      document.documentElement.style.setProperty(key, value);
+    }
+  }
+
+  // 2) تحميل الـ reviews في صفحة reviews.html
+  if (document.querySelector('.testimonials-grid') && window.location.pathname.includes('reviews')) {
+    await renderReviews();
+  }
+
+  // 3) تحميل الـ FAQ في صفحة faq.html
+  if (document.querySelector('.faq-list') && window.location.pathname.includes('faq')) {
+    await renderFAQ();
+  }
+
+  // 4) تحميل الـ courses في صفحة plans.html
+  if (document.querySelector('.courses-grid') && window.location.pathname.includes('plans')) {
+    await renderCourses();
+  }
+
+  // 5) تحميل gallery في index.html
+  if (document.querySelector('.artwork-gallery-grid')) {
+    await renderGallery();
+  }
+}
+
+/* ---- رسم الـ Reviews ---- */
+async function renderReviews() {
+  const reviews = await dbRead('reviews_data');
+  if (!reviews || !reviews.length) return;
+
+  const grid = document.querySelector('.testimonials-grid');
+  if (!grid) return;
+
+  const isAr = document.body.classList.contains('rtl');
+  grid.innerHTML = '';
+
+  reviews.forEach(r => {
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    const quote = isAr ? r.quoteAr : r.quoteEn;
+    const course = isAr ? r.courseAr : r.courseEn;
+
+    const card = document.createElement('article');
+    card.className = 'glass-card testimonial-card fade-up';
+    card.innerHTML = `
+      <div class="testimonial-stars" style="color:#fbbf24;">${stars}</div>
+      <p class="testimonial-quote">"${quote}"</p>
+      <div class="testimonial-user">
+        <img class="user-avatar" src="assets/instructor.png" alt="${r.name}">
+        <div>
+          <span class="user-name">${r.name}</span>
+          <span class="user-title" style="display:block;">${course}</span>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // إعادة تشغيل animation observer
+  initScrollAnimations();
+}
+
+/* ---- رسم الـ FAQ ---- */
+async function renderFAQ() {
+  const faqs = await dbRead('faq_data');
+  if (!faqs || !faqs.length) return;
+
+  const list = document.querySelector('.faq-list');
+  if (!list) return;
+
+  const isAr = document.body.classList.contains('rtl');
+  list.innerHTML = '';
+
+  faqs.forEach(faq => {
+    const q = isAr ? faq.questionAr : faq.questionEn;
+    const a = isAr ? faq.answerAr : faq.answerEn;
+
+    const item = document.createElement('div');
+    item.className = 'faq-item glass-card fade-up';
+    item.innerHTML = `
+      <button class="faq-trigger" aria-expanded="false">
+        <span>${q}</span>
+        <i class="fa-solid fa-plus faq-icon-indicator"></i>
+      </button>
+      <div class="faq-panel">
+        <div class="faq-content">${a}</div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+
+  initFAQAccordion();
+  initScrollAnimations();
+}
+
+/* ---- رسم الـ Courses في Plans ---- */
+async function renderCourses() {
+  const courses = await dbRead('courses_data');
+  if (!courses || !courses.length) return;
+
+  const grid = document.querySelector('.courses-grid');
+  if (!grid) return;
+
+  const isAr = document.body.classList.contains('rtl');
+  grid.innerHTML = '';
+
+  courses.forEach(c => {
+    const title = isAr ? c.titleAr : c.titleEn;
+    const desc = isAr ? (c.descAr || '') : (c.descEn || '');
+    const badge = isAr ? c.badgeAr : c.badgeEn;
+    const level = isAr ? c.levelAr : c.levelEn;
+
+    const article = document.createElement('article');
+    article.className = 'course-card fade-up visible';
+    article.setAttribute('data-category', c.levelEn.toLowerCase());
+    article.innerHTML = `
+      <div class="glass-card">
+        <div class="course-image">
+          <span class="course-badge">${badge}</span>
+          <img src="${c.image}" alt="${title}">
+        </div>
+        <div class="course-content">
+          <div class="course-meta">
+            <span><i class="fa-solid fa-clock"></i> ${c.duration}</span>
+            <span><i class="fa-solid fa-layer-group"></i> ${level}</span>
+          </div>
+          <h3 class="course-title">${title}</h3>
+          ${desc ? `<p class="course-desc">${desc}</p>` : ''}
+          <div class="course-pricing">
+            <div>
+              <div class="price-label">${isAr ? 'السعر' : 'Price'}</div>
+              <div class="price-value">$${c.price}<span>.00</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="course-actions">
+          <a href="https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz" target="_blank" class="btn btn-secondary">
+            ${isAr ? 'مقدمة' : 'Intro'}
+          </a>
+          <a href="thankyou.html" class="btn btn-primary">
+            ${isAr ? 'شراء الدورة' : 'Get Access'}
+          </a>
+        </div>
+      </div>
+    `;
+    grid.appendChild(article);
+  });
+
+  initCategoryFilters();
+}
+
+/* ---- رسم الـ Gallery في index.html ---- */
+async function renderGallery() {
+  const artworks = await dbRead('artworks_data');
+  if (!artworks || !artworks.length) return;
+
+  const grid = document.querySelector('.artwork-gallery-grid');
+  if (!grid) return;
+
+  const isAr = document.body.classList.contains('rtl');
+  grid.innerHTML = '';
+
+  const ratioMap = { '3/4': 'ratio-3-4', '1/1': 'ratio-1-1', '4/3': 'ratio-4-3' };
+
+  artworks.forEach(art => {
+    const title = isAr ? art.titleAr : art.titleEn;
+    const category = isAr ? art.categoryAr : art.categoryEn;
+    const ratioClass = ratioMap[art.ratio] || 'ratio-1-1';
+
+    const card = document.createElement('div');
+    card.className = `artwork-card fade-up ${ratioClass}`;
+    card.innerHTML = `
+      <img src="${art.image}" alt="${title}">
+      <div class="artwork-overlay">
+        <span class="artwork-category">${category}</span>
+        <h4 class="artwork-title">${title}</h4>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  initScrollAnimations();
 }
