@@ -4,49 +4,43 @@
 //  <script type="module" src="js/firebase-admin.js"></script>
 // ==========================================
 
-import { db, storage } from "./firebase-config.js";
+import { db } from "./firebase-config.js";
 import {
   doc, setDoc, getDoc,
   collection, getDocs,
   deleteDoc, onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import {
-  ref, uploadBytesResumable, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+// ==========================================
+//  IMAGE UPLOAD — ImgBB
+// ==========================================
+const IMGBB_API_KEY = "58ae2ef23658ae0c33a83f35b73b2e7d";
 
-// ==========================================
-//  IMAGE UPLOAD — Firebase Storage
-// ==========================================
 async function uploadImage(file, folder, inputId) {
   const progressWrap = document.getElementById(inputId + "-progress-wrap");
   const progressBar  = document.getElementById(inputId + "-progress");
-  const btn          = document.getElementById(inputId + "-upload-btn");
 
-  return new Promise((resolve, reject) => {
-    const fileName  = `${folder}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+  if (progressWrap) progressWrap.style.display = "block";
+  if (progressBar)  progressBar.style.width = "50%";
 
-    if (progressWrap) progressWrap.style.display = "block";
+  const formData = new FormData();
+  formData.append("image", file);
 
-    uploadTask.on("state_changed",
-      (snapshot) => {
-        const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        if (progressBar) progressBar.style.width = pct + "%";
-      },
-      (error) => {
-        if (progressWrap) progressWrap.style.display = "none";
-        reject(error);
-      },
-      async () => {
-        const url = await getDownloadURL(uploadTask.snapshot.ref);
-        if (progressWrap) progressWrap.style.display = "none";
-        if (progressBar)  progressBar.style.width = "0%";
-        resolve(url);
-      }
-    );
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: "POST",
+    body: formData
   });
+
+  const data = await res.json();
+
+  if (progressWrap) progressWrap.style.display = "none";
+  if (progressBar)  progressBar.style.width = "0%";
+
+  if (data.success) {
+    return data.data.url;
+  } else {
+    throw new Error(data.error?.message || "فشل رفع الصورة");
+  }
 }
 
 function wireUploadButton(inputId, folder) {
