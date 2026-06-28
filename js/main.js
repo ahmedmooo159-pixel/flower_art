@@ -991,11 +991,15 @@ function updateDepth(cards, theta) {
 
 function initMobileCarousel(carousel, cards) {
   // Clear any desktop 3D transforms & styles
-  carousel.style.transform = "";
+  carousel.style.transform = "none";
+  carousel.style.transformStyle = "flat";
   cards.forEach(card => {
-    card.style.transform = "";
-    card.style.opacity = "";
+    card.style.transform = "none";
+    card.style.opacity = "1";
     card.style.zIndex = "";
+    card.style.position = "relative";
+    card.style.left = "auto";
+    card.style.top = "auto";
     card.classList.remove("hovered");
     
     // Clear desktop hover events
