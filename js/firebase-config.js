@@ -7,15 +7,13 @@ import { getFirestore }   from "https://www.gstatic.com/firebasejs/10.14.1/fireb
 import { getAnalytics }   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyCFl7mebeXiw0SwjaSQfWeYIyCNvSIYb7I",
-  authDomain:        "flowerart-9f72b.firebaseapp.com",
-  projectId:         "flowerart-9f72b",
-  storageBucket:     "flowerart-9f72b.firebasestorage.app",
-  messagingSenderId: "95036352572",
-  appId:             "1:95036352572:web:64e0c1add6b962acdd3b39",
-  measurementId:     "G-G3THC2LD4Q"
+  apiKey: "AIzaSyBh-CCFByaAPHyLtEMXCeRIDKH6hxDl_n4",
+  authDomain: "flower-5f122.firebaseapp.com",
+  projectId: "flower-5f122",
+  storageBucket: "flower-5f122.firebasestorage.app",
+  messagingSenderId: "912142841872",
+  appId: "1:912142841872:web:5f76b9b2142b71131cb295"
 };
-
 const app       = initializeApp(firebaseConfig);
 const db        = getFirestore(app);
 const analytics = getAnalytics(app);
