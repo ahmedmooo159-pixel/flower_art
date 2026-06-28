@@ -855,9 +855,19 @@
                   </select>
                 </div>
                 <div class="admin-form-group">
-                  <label>Image URL / رابط الصورة</label>
-                  <input type="image" id="gallery-image" class="admin-input" value="assets/artwork-placeholder.jpg"
-                    required>
+                  <label>Image / الصورة</label>
+                  <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="gallery-image" class="admin-input" value="assets/artwork-placeholder.jpg"
+                      placeholder="أو اكتب رابط الصورة يدوياً" style="flex:1; min-width:0;" required>
+                    <button type="button" id="gallery-image-upload-btn"
+                      style="padding:0.6rem 1rem; background:var(--accent-primary,#c9748f); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; white-space:nowrap; display:flex; align-items:center; gap:0.4rem;">
+                      <i class="fa-solid fa-upload"></i> رفع صورة
+                    </button>
+                    <input type="file" id="gallery-image-file" accept="image/*" style="display:none;">
+                  </div>
+                  <div id="gallery-image-progress-wrap" style="display:none; margin-top:6px; height:6px; background:#eee; border-radius:4px;">
+                    <div id="gallery-image-progress" style="height:100%; width:0%; background:var(--accent-primary,#c9748f); border-radius:4px; transition:width 0.2s;"></div>
+                  </div>
                 </div>
               </div>
               <button type="submit" class="btn btn-primary">
@@ -954,9 +964,19 @@
                 </div>
               </div>
               <div class="admin-form-group">
-                <label>Image URL / رابط صورة الكورس</label>
-                <input type="text" id="course-image" class="admin-input" value="assets/artwork-placeholder.jpg"
-                  required>
+                <label>Image / صورة الكورس</label>
+                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                  <input type="text" id="course-image" class="admin-input" value="assets/artwork-placeholder.jpg"
+                    placeholder="أو اكتب رابط الصورة يدوياً" style="flex:1; min-width:0;" required>
+                  <button type="button" id="course-image-upload-btn"
+                    style="padding:0.6rem 1rem; background:var(--accent-primary,#c9748f); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; white-space:nowrap; display:flex; align-items:center; gap:0.4rem;">
+                    <i class="fa-solid fa-upload"></i> رفع صورة
+                  </button>
+                  <input type="file" id="course-image-file" accept="image/*" style="display:none;">
+                </div>
+                <div id="course-image-progress-wrap" style="display:none; margin-top:6px; height:6px; background:#eee; border-radius:4px;">
+                  <div id="course-image-progress" style="height:100%; width:0%; background:var(--accent-primary,#c9748f); border-radius:4px; transition:width 0.2s;"></div>
+                </div>
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="fa-solid fa-plus"></i>
