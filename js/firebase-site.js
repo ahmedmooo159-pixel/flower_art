@@ -371,13 +371,15 @@ function listenArtworks() {
           carousel.appendChild(el);
         });
         applyLang();
-        carousel.style.opacity = "1";
-        carousel.style.transition = "opacity 0.4s ease";
 
-        // Re-initialize carousel with new cards
-        if (window.initCarousel) {
-          window.initCarousel();
-        }
+        // Clear inline opacity so CSS can take over (fixes mobile display)
+        carousel.style.transition = "opacity 0.4s ease";
+        carousel.style.opacity = "";
+
+        // Re-initialize carousel AFTER cards are in the DOM
+        requestAnimationFrame(() => {
+          if (window.initCarousel) window.initCarousel();
+        });
       };
 
       if (isFirstLoad) {
