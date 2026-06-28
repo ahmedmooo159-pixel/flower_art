@@ -1,16 +1,121 @@
 // ==========================================
-//  FIREBASE ADMIN BRIDGE — flowerart-9f72b
+//  FIREBASE ADMIN BRIDGE — flower-5f122
 //  أضفه في admin.html قبل </body>:
 //  <script type="module" src="js/firebase-admin.js"></script>
 // ==========================================
 
-import { db } from "./firebase-config.js";
+import { db, storage } from "./firebase-config.js";
 import {
   doc, setDoc, getDoc,
   collection, getDocs,
   deleteDoc, onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  ref, uploadBytesResumable, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+// ==========================================
+//  IMAGE UPLOAD — Firebase Storage
+// ==========================================
+async function uploadImageToStorage(file, folder = "uploads") {
+  return new Promise((resolve, reject) => {
+    const fileName = `${folder}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const storageRef = ref(storage, fileName);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on("state_changed",
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        // Update any active progress bar
+        document.querySelectorAll(".upload-progress").forEach(el => {
+          el.style.width = progress + "%";
+          el.closest(".upload-progress-wrap")?.style.setProperty("display", "block");
+        });
+      },
+      (error) => {
+        console.error("Upload error:", error);
+        reject(error);
+      },
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        // Hide progress bars
+        document.querySelectorAll(".upload-progress-wrap").forEach(el => el.style.display = "none");
+        resolve(url);
+      }
+    );
+  });
+}
+
+// ─── Inject upload button next to any image text input ───────────────
+function injectUploadButtons() {
+  const imageFields = [
+    { inputId: "gallery-image", folder: "artworks"  },
+    { inputId: "course-image",  folder: "courses"   },
+  ];
+
+  imageFields.forEach(({ inputId, folder }) => {
+    const input = document.getElementById(inputId);
+    if (!input || input.dataset.uploadInjected) return;
+    input.dataset.uploadInjected = "true";
+
+    // Change input type to text so URL shows
+    input.type = "text";
+
+    // Wrapper
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;";
+
+    // Hidden file input
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.style.display = "none";
+    fileInput.id = inputId + "-file";
+
+    // Upload button
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.innerHTML = '<i class="fa-solid fa-upload"></i> رفع صورة';
+    btn.style.cssText = "padding:0.5rem 1rem; background:var(--accent-primary,#c9748f); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; white-space:nowrap;";
+
+    // Progress bar wrapper
+    const progressWrap = document.createElement("div");
+    progressWrap.className = "upload-progress-wrap";
+    progressWrap.style.cssText = "display:none; width:100%; height:6px; background:#eee; border-radius:4px; margin-top:4px;";
+    const progressBar = document.createElement("div");
+    progressBar.className = "upload-progress";
+    progressBar.style.cssText = "height:100%; width:0%; background:var(--accent-primary,#c9748f); border-radius:4px; transition:width 0.2s;";
+    progressWrap.appendChild(progressBar);
+
+    // Wire up
+    btn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
+      try {
+        const url = await uploadImageToStorage(file, folder);
+        input.value = url;
+        toast("✅ تم رفع الصورة بنجاح", "success");
+      } catch (e) {
+        toast("❌ فشل رفع الصورة: " + e.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-upload"></i> رفع صورة';
+        fileInput.value = "";
+      }
+    });
+
+    // Replace input with wrapped version
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    wrap.appendChild(btn);
+    wrap.appendChild(fileInput);
+    input.parentNode.insertBefore(progressWrap, wrap.nextSibling);
+  });
+}
 
 // ─── Collection names ───────────────────
 const C = {
@@ -118,6 +223,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     A.loadAllPanels();
     A.renderOverviewPanel();
   }
+
+  // ── حقن أزرار رفع الصور ──────────────────
+  injectUploadButtons();
+  // بعد كل loadAllPanels تاني (لو الأدمن عمل reload للباجات)
+  const origLoad = A.loadAllPanels.bind(A);
+  A.loadAllPanels = function() {
+    origLoad();
+    setTimeout(injectUploadButtons, 100);
+  };
 
   // ==========================================
   //  ARTWORK — save
