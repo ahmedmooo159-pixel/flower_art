@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollParallax();
   initPetals();
   initMuseumDecorations();
+  if (window.initCarousel) window.initCarousel();
 });
 
 /* ==========================================
@@ -846,3 +847,241 @@ function buildWaveDivider(hero) {
   
   hero.parentNode.insertBefore(divider, hero.nextSibling);
 }
+
+/* ==========================================================================
+   NEW CAROUSEL — 3D CIRCULAR CAROUSEL & AUTO-SCROLL
+   ========================================================================== */
+
+let carouselAngle = 0;
+let carouselAnimationFrameId = null;
+let isCarouselHovered = false;
+let isMobileCarousel = false;
+let mobileScrollInterval = null;
+let mobileIsScrolling = false;
+
+window.initCarousel = function() {
+  const carousel = document.querySelector("#artwork-carousel");
+  if (!carousel) return;
+
+  const cards = carousel.querySelectorAll(".artwork-carousel-card");
+  if (!cards.length) return;
+
+  // Clean up any existing loops or listeners before re-initializing
+  if (carouselAnimationFrameId) {
+    cancelAnimationFrame(carouselAnimationFrameId);
+    carouselAnimationFrameId = null;
+  }
+  if (mobileScrollInterval) {
+    clearInterval(mobileScrollInterval);
+    mobileScrollInterval = null;
+  }
+
+  // Detect mode
+  isMobileCarousel = window.innerWidth < 768;
+
+  if (isMobileCarousel) {
+    initMobileCarousel(carousel, cards);
+  } else {
+    initDesktopCarousel(carousel, cards);
+  }
+};
+
+function initDesktopCarousel(carousel, cards) {
+  const totalCards = cards.length;
+  const theta = 360 / totalCards;
+  
+  // Set dynamic 3D radius (translateZ)
+  const radius = window.innerWidth >= 1200 ? 400 : 280;
+
+  // Apply 3D positions to each card
+  cards.forEach((card, index) => {
+    card.style.transform = `rotateY(${index * theta}deg) translateZ(${radius}px)`;
+    card.classList.remove("hovered");
+    
+    // Clear any mobile-specific styling/events
+    card.onclick = null;
+
+    // Desktop hover listeners
+    card.onmouseenter = () => {
+      isCarouselHovered = true;
+      carousel.classList.add("has-hovered-card");
+      card.classList.add("hovered");
+    };
+
+    card.onmouseleave = () => {
+      isCarouselHovered = false;
+      carousel.classList.remove("has-hovered-card");
+      card.classList.remove("hovered");
+    };
+  });
+
+  // Setup loop
+  let lastTime = performance.now();
+  function rotateLoop(time) {
+    if (!isCarouselHovered) {
+      const isRTL = document.body.classList.contains("rtl");
+      const direction = isRTL ? -1 : 1;
+      // Elegant slow rotation speed (approx 1 full turn every 25 seconds)
+      const rotationSpeed = 360 / (25 * 1000); // degrees per millisecond
+      const delta = time - lastTime;
+      carouselAngle += rotationSpeed * delta * direction;
+      
+      carousel.style.transform = `rotateY(${carouselAngle}deg)`;
+      
+      // Update opacity and z-index for 3D depth
+      updateDepth(cards, theta);
+    }
+    lastTime = time;
+    carouselAnimationFrameId = requestAnimationFrame(rotateLoop);
+  }
+  
+  // Trigger initial depth update
+  updateDepth(cards, theta);
+  
+  carouselAnimationFrameId = requestAnimationFrame(rotateLoop);
+}
+
+function updateDepth(cards, theta) {
+  cards.forEach((card, index) => {
+    const cardAngle = (index * theta) + carouselAngle;
+    
+    let normAngle = cardAngle % 360;
+    if (normAngle < 0) normAngle += 360;
+    
+    const cosVal = Math.cos(normAngle * Math.PI / 180);
+    
+    // Opacity: Front = 1.0, Back = 0.35
+    const opacity = 0.35 + 0.65 * (cosVal + 1) / 2;
+    card.style.opacity = opacity;
+    
+    // Z-index: Front has high z-index (up to 200)
+    const zIndex = Math.round((cosVal + 1) * 100);
+    card.style.zIndex = zIndex;
+  });
+}
+
+function initMobileCarousel(carousel, cards) {
+  // Clear any desktop 3D transforms & styles
+  carousel.style.transform = "";
+  cards.forEach(card => {
+    card.style.transform = "";
+    card.style.opacity = "";
+    card.style.zIndex = "";
+    card.classList.remove("hovered");
+    
+    // Clear desktop hover events
+    card.onmouseenter = null;
+    card.onmouseleave = null;
+
+    // Mobile tap event listener (toggle zoom overlay)
+    card.onclick = (e) => {
+      e.stopPropagation();
+      const isAlreadyZoomed = card.classList.contains("hovered");
+      
+      // Clear hovered from all other cards
+      cards.forEach(c => c.classList.remove("hovered"));
+      carousel.classList.remove("has-hovered-card");
+
+      if (!isAlreadyZoomed) {
+        card.classList.add("hovered");
+        carousel.classList.add("has-hovered-card");
+      }
+    };
+  });
+
+  // Tap outside to close hovered state
+  document.addEventListener("click", () => {
+    if (isMobileCarousel) {
+      cards.forEach(c => c.classList.remove("hovered"));
+      carousel.classList.remove("has-hovered-card");
+    }
+  });
+
+  // Setup mobile auto-scrolling
+  let scrollSpeed = 0.6; // pixels per frame
+  let isUserInteracting = false;
+  let interactionTimeout = null;
+
+  function autoScrollMobile() {
+    if (!isUserInteracting && !mobileIsScrolling && !carousel.classList.contains("has-hovered-card")) {
+      carousel.scrollLeft += scrollSpeed;
+      
+      // If reached the end of the scroll, wrap back to start
+      if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 1)) {
+        carousel.scrollLeft = 0;
+      }
+    }
+  }
+
+  mobileScrollInterval = setInterval(autoScrollMobile, 16); // ~60fps auto-scroll check
+
+  // Touch Swipe manual interaction tracking
+  let startX = 0;
+  let scrollLeftStart = 0;
+
+  carousel.addEventListener("touchstart", (e) => {
+    isUserInteracting = true;
+    mobileIsScrolling = true;
+    if (interactionTimeout) clearTimeout(interactionTimeout);
+    
+    startX = e.touches[0].clientX;
+    scrollLeftStart = carousel.scrollLeft;
+  }, { passive: true });
+
+  carousel.addEventListener("touchmove", (e) => {
+    const dx = startX - e.touches[0].clientX;
+    carousel.scrollLeft = scrollLeftStart + dx;
+  }, { passive: true });
+
+  carousel.addEventListener("touchend", () => {
+    mobileIsScrolling = false;
+    // Delay resuming auto-scroll for a natural feel
+    interactionTimeout = setTimeout(() => {
+      isUserInteracting = false;
+    }, 2000);
+  }, { passive: true });
+
+  // Mouse drag support for simulating touch on desktop/responsive modes
+  let isMouseDown = false;
+  carousel.addEventListener("mousedown", (e) => {
+    isMouseDown = true;
+    isUserInteracting = true;
+    mobileIsScrolling = true;
+    if (interactionTimeout) clearTimeout(interactionTimeout);
+    startX = e.pageX - carousel.offsetLeft;
+    scrollLeftStart = carousel.scrollLeft;
+  });
+
+  carousel.addEventListener("mousemove", (e) => {
+    if (!isMouseDown) return;
+    e.preventDefault();
+    const x = e.pageX - carousel.offsetLeft;
+    const walk = startX - x;
+    carousel.scrollLeft = scrollLeftStart + walk;
+  });
+
+  carousel.addEventListener("mouseup", () => {
+    isMouseDown = false;
+    mobileIsScrolling = false;
+    interactionTimeout = setTimeout(() => {
+      isUserInteracting = false;
+    }, 2000);
+  });
+
+  carousel.addEventListener("mouseleave", () => {
+    isMouseDown = false;
+    mobileIsScrolling = false;
+    isUserInteracting = false;
+  });
+}
+
+// Window resize listener
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (window.initCarousel) {
+      window.initCarousel();
+    }
+  }, 250);
+});

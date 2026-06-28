@@ -260,34 +260,52 @@ async function loadFAQ() {
 // ==========================================
 async function loadArtworks() {
   const snap = await getDocs(collection(db, "artworks"));
-  if (snap.empty) return;
+  const carousel = document.querySelector("#artwork-carousel");
+  if (!carousel) return;
+
+  if (snap.empty) {
+    if (window.initCarousel) window.initCarousel();
+    return;
+  }
 
   const artworks = snap.docs.map(d => clean(d.data()));
-  const gallery  = document.querySelector(".artwork-gallery-grid");
-  if (!gallery) return;
 
-  gallery.innerHTML = "";
-  artworks.forEach(art => {
-    const ratio = (art.ratio || "1/1").replace("/", "-");
-    const el = document.createElement("div");
-    el.className = `artwork-card fade-up ratio-${ratio}`;
-    el.innerHTML = `
-      <img src="${art.image || "assets/artwork-placeholder.jpg"}"
-           alt="${art.titleEn || ""}"
-           onerror="this.src='assets/artwork-placeholder.jpg'">
-      <div class="artwork-overlay">
-        <span class="artwork-category">
-          <span class="lang-en">${art.categoryEn || ""}</span>
-          <span class="lang-ar">${art.categoryAr || ""}</span>
-        </span>
-        <h4 class="artwork-title">
-          <span class="lang-en">${art.titleEn || ""}</span>
-          <span class="lang-ar">${art.titleAr || ""}</span>
-        </h4>
-      </div>`;
-    gallery.appendChild(el);
-  });
-  applyLang();
+  // NEW CAROUSEL: Smoothly transition from skeleton/static to dynamic Firebase data
+  carousel.style.opacity = "0";
+  carousel.style.transition = "opacity 0.3s ease";
+  
+  setTimeout(() => {
+    carousel.innerHTML = "";
+    artworks.forEach((art, index) => {
+      const el = document.createElement("div");
+      el.className = "artwork-carousel-card";
+      el.style.setProperty("--index", index);
+      el.innerHTML = `
+        <div class="glass-card">
+          <img src="${art.image || "assets/artwork-placeholder.jpg"}"
+               alt="${art.titleEn || ""}"
+               onerror="this.src='assets/artwork-placeholder.jpg'">
+          <div class="artwork-overlay">
+            <span class="artwork-category">
+              <span class="lang-en">${art.categoryEn || ""}</span>
+              <span class="lang-ar">${art.categoryAr || ""}</span>
+            </span>
+            <h4 class="artwork-title">
+              <span class="lang-en">${art.titleEn || ""}</span>
+              <span class="lang-ar">${art.titleAr || ""}</span>
+            </h4>
+          </div>
+        </div>`;
+      carousel.appendChild(el);
+    });
+    applyLang();
+    carousel.style.opacity = "1";
+    
+    // NEW CAROUSEL: Initialize rotation & 3D placement after DOM injection
+    if (window.initCarousel) {
+      window.initCarousel();
+    }
+  }, 300);
 }
 
 // ==========================================
