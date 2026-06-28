@@ -111,25 +111,37 @@ function initScrollHeader() {
    SCROLL FADE-UP ANIMATIONS (Intersection Observer)
    ========================================== */
 function initScrollAnimations() {
-  const animatedElements = document.querySelectorAll('.fade-up');
+  // Only observe elements that haven't been manually made visible in HTML
+  const animatedElements = document.querySelectorAll('.fade-up:not(.visible)');
   
   if ('IntersectionObserver' in window) {
     const observerOptions = {
       root: null,
-      rootMargin: '0px',
-      threshold: 0.1
+      rootMargin: '0px 0px -20px 0px',
+      threshold: 0.05
     };
 
     const observer = new IntersectionObserver((entries, observer) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
+          // Add a small requestAnimationFrame delay to ensure paint happens before transition
+          requestAnimationFrame(() => {
+            entry.target.classList.add('visible');
+          });
           observer.unobserve(entry.target); // Stop observing once animated
         }
       });
     }, observerOptions);
 
-    animatedElements.forEach(el => observer.observe(el));
+    animatedElements.forEach(el => {
+      // If already in viewport on load, animate immediately without waiting for scroll
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        el.classList.add('visible');
+      } else {
+        observer.observe(el);
+      }
+    });
   } else {
     // Fallback if browser doesn't support IntersectionObserver
     animatedElements.forEach(el => el.classList.add('visible'));
@@ -292,18 +304,26 @@ function initFAQAccordion() {
    ========================================================================== */
 
 /* Shared 3D Floating Animation Loop */
+let isFloatVisible = true;
 function floatLoop() {
-  const time = Date.now();
-  floatItems.forEach(item => {
-    const x = Math.sin(time * item.speedX + item.offsetX) * item.amplitudeX;
-    const y = Math.cos(time * item.speedY + item.offsetY) * item.amplitudeY;
-    const rotX = Math.sin(time * 0.0005 + item.offsetR) * item.ampRotX;
-    const rotY = Math.cos(time * 0.0004 + item.offsetR) * item.ampRotY;
-    const rotZ = (time * item.speedRotZ + item.offsetRotZ) % 360;
-    item.el.style.transform = `translate3d(${x}px, ${y}px, ${item.baseZ}px) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-  });
+  if (isFloatVisible) {
+    const time = Date.now();
+    floatItems.forEach(item => {
+      const x = Math.sin(time * item.speedX + item.offsetX) * item.amplitudeX;
+      const y = Math.cos(time * item.speedY + item.offsetY) * item.amplitudeY;
+      const rotX = Math.sin(time * 0.0005 + item.offsetR) * item.ampRotX;
+      const rotY = Math.cos(time * 0.0004 + item.offsetR) * item.ampRotY;
+      const rotZ = (time * item.speedRotZ + item.offsetRotZ) % 360;
+      item.el.style.transform = `translate3d(${x}px, ${y}px, ${item.baseZ}px) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+    });
+  }
   requestAnimationFrame(floatLoop);
 }
+
+// Pause floating when scrolled away
+window.addEventListener('scroll', () => {
+  isFloatVisible = window.scrollY < window.innerHeight + 200;
+}, { passive: true });
 
 /* ANIMATION A — 3D Floating Art Tools on Hero Section */
 function initHero3DFloat() {
@@ -369,7 +389,11 @@ function initHero3DFloat() {
 
 /* ANIMATION B — 3D Card Tilt on .glass-card (mouse parallax) */
 function initCard3DTilt() {
-  const cards = document.querySelectorAll('.glass-card');
+  // Disable on mobile/touch devices for performance and UX
+  if (window.innerWidth < 768 || ('ontouchstart' in window)) return;
+  
+  // Don't apply to carousel cards or nested elements
+  const cards = document.querySelectorAll('.glass-card:not(.artwork-carousel-card .glass-card)');
   cards.forEach(card => {
     card.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect();
@@ -424,17 +448,20 @@ function initScrollParallax() {
     if (!ticked) {
       requestAnimationFrame(() => {
         const scrollY = window.scrollY;
-        purpleGlows.forEach(el => {
-          el.style.transform = `translateY(${scrollY * 0.3}px) translateZ(0)`;
-        });
-        blueGlows.forEach(el => {
-          el.style.transform = `translateY(${scrollY * -0.2}px) translateZ(0)`;
-        });
+        // Only run parallax if near top for performance
+        if (scrollY < window.innerHeight * 1.5) {
+          purpleGlows.forEach(el => {
+            el.style.transform = `translateY(${scrollY * 0.3}px) translateZ(0)`;
+          });
+          blueGlows.forEach(el => {
+            el.style.transform = `translateY(${scrollY * -0.2}px) translateZ(0)`;
+          });
+        }
         ticked = false;
       });
       ticked = true;
     }
-  });
+  }, { passive: true });
 }
 
 /* ANIMATION F — Floating Rose Petals (Creamy theme version) */
@@ -775,7 +802,7 @@ function initMuseumParticles(hero) {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   
-  const particleCount = 60;
+  const particleCount = window.innerWidth < 768 ? 20 : 60;
   const particles = [];
   
   const colorTemplates = [
@@ -799,22 +826,24 @@ function initMuseumParticles(hero) {
   }
   
   function drawParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
+    if (isFloatVisible) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      if (p.x < 0) p.x = canvas.width;
-      if (p.x > canvas.width) p.x = 0;
-      if (p.y < 0) p.y = canvas.height;
-      if (p.y > canvas.height) p.y = 0;
-      
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.fill();
-    });
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+    }
     
     requestAnimationFrame(drawParticles);
   }

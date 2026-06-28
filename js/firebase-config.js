@@ -2,9 +2,9 @@
 //  FIREBASE CONFIG — flowerart-9f72b
 // ==========================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getFirestore }   from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import { getAnalytics }   from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore }   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAnalytics }   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyCFl7mebeXiw0SwjaSQfWeYIyCNvSIYb7I",

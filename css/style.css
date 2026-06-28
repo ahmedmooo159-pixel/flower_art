@@ -496,7 +496,7 @@ body.rtl .nav-link::after {
 }
 
 .hero-title {
-  font-size: 4rem;
+  font-size: clamp(2rem, 5vw + 1rem, 4rem);
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 1.5rem;
@@ -1339,6 +1339,7 @@ body.rtl .telegram-instruction {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .fade-up.visible {
@@ -1497,8 +1498,16 @@ body.rtl .telegram-instruction {
 
 /* Mobile Devices */
 @media (max-width: 480px) {
+  .section {
+    padding: 3.5rem 0;
+  }
+
+  .hero {
+    padding-top: 5rem;
+  }
+
   .hero-title {
-    font-size: 2.5rem;
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
   }
 
   .hero-btns {
@@ -1508,23 +1517,23 @@ body.rtl .telegram-instruction {
 
   .hero-btns .btn {
     width: 100%;
+    min-height: 48px;
   }
 
-  .courses-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .how-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .testimonials-grid {
+  .courses-grid,
+  .how-grid,
+  .testimonials-grid,
+  .gallery-grid {
     grid-template-columns: 1fr;
   }
 
   .course-actions {
     grid-template-columns: 1fr;
     padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+
+  .course-actions .btn {
+    min-height: 48px;
   }
 
   .learn-list {
@@ -1540,6 +1549,11 @@ body.rtl .telegram-instruction {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
+  }
+
+  .payment-method-card {
+    min-width: 120px;
+    padding: 1rem;
   }
 }
 
@@ -1714,8 +1728,16 @@ body.rtl .telegram-instruction {
 }
 
 /* C) Glowing border pulse on .glass-card */
+/* Disabled continuous box-shadow animation for performance, relying on hover instead */
 .glass-card {
-  animation: cardGlowPulse 4s infinite ease-in-out;
+  transition: var(--transition-smooth);
+}
+
+@media (min-width: 1025px) {
+  /* Optional: Keep subtle pulse only on desktop if really needed, but hover is better */
+  .instructor-frame-wrapper {
+    animation: cardGlowPulse 4s infinite ease-in-out;
+  }
 }
 
 @keyframes cardGlowPulse {
@@ -1793,7 +1815,7 @@ body.rtl .telegram-instruction {
 
 .meet-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: minmax(280px, 320px) 1fr;
   gap: 3rem;
   align-items: center;
 }

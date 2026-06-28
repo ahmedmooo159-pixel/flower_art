@@ -10,7 +10,7 @@ import {
   collection, getDocs,
   deleteDoc, onSnapshot,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // ─── Collection names ───────────────────
 const C = {

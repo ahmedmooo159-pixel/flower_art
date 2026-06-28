@@ -1,17 +1,29 @@
 // ==========================================
 //  FIREBASE SITE BRIDGE — flowerart-9f72b
+//  Real-time sync: onSnapshot on all collections
 //  أضفه في كل صفحة عامة قبل </body>:
 //  <script type="module" src="js/firebase-site.js"></script>
 // ==========================================
 
 import { db } from "./firebase-config.js";
 import {
-  doc, getDoc,
-  collection, getDocs,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  doc,
+  collection,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const PAGE = window.location.pathname.split("/").pop() || "index.html";
+
+// ─── Unsubscribe registry (prevents memory leaks) ───
+const _unsubs = [];
+function registerListener(unsub) {
+  _unsubs.push(unsub);
+}
+window.addEventListener("beforeunload", () => {
+  _unsubs.forEach(fn => { try { fn(); } catch(e){} });
+});
 
 // ─── Helper: apply current language ──────
 function applyLang() {
@@ -34,293 +46,375 @@ function clean(data) {
   return d;
 }
 
+// ─── Helper: safe HTML escape ────────────
+function esc(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // ==========================================
 //  COLORS — Realtime listener
 // ==========================================
 function listenColors() {
-  onSnapshot(doc(db, "colors", "theme"), snap => {
-    if (!snap.exists()) return;
-    Object.entries(snap.data()).forEach(([k, v]) => {
-      if (k.startsWith("--") && v)
-        document.documentElement.style.setProperty(k, v);
-    });
-  });
+  const unsub = onSnapshot(
+    doc(db, "colors", "theme"),
+    snap => {
+      if (!snap.exists()) return;
+      Object.entries(snap.data()).forEach(([k, v]) => {
+        if (k.startsWith("--") && v)
+          document.documentElement.style.setProperty(k, v);
+      });
+    },
+    err => console.warn("[colors listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
 //  SETTINGS — Realtime listener
 // ==========================================
 function listenSettings() {
-  onSnapshot(doc(db, "settings", "main"), snap => {
-    if (!snap.exists()) return;
-    const s = snap.data();
-    if (s.telegram) document.querySelectorAll('a[aria-label="Telegram"]').forEach(el => el.href = s.telegram);
-    if (s.instagram) document.querySelectorAll('a[aria-label="Instagram"]').forEach(el => el.href = s.instagram);
-    if (s.youtube)   document.querySelectorAll('a[aria-label="YouTube"]').forEach(el => el.href = s.youtube);
-    // Footer copyright
-    if (s.copyrightEn) {
-      document.querySelectorAll(".footer-bottom .lang-en").forEach(el => {
-        if (el.textContent.includes("©")) el.textContent = s.copyrightEn;
-      });
-    }
-    if (s.copyrightAr) {
-      document.querySelectorAll(".footer-bottom .lang-ar").forEach(el => {
-        if (el.textContent.includes("©")) el.textContent = s.copyrightAr;
-      });
-    }
-  });
-}
-
-// ==========================================
-//  PAYMENT METHODS (index.html)
-// ==========================================
-async function loadPayments() {
-  const snap = await getDoc(doc(db, "payments", "config"));
-  if (!snap.exists()) return;
-  const cfg = snap.data();
-
-  const map = {
-    bank: "Bank Transfer", mada: "Mada", visa: "Visa",
-    apple: "Apple Pay",   stc: "STC",   paypal: "PayPal"
-  };
-
-  document.querySelectorAll(".payment-method-card").forEach(card => {
-    const txt = card.textContent.trim();
-    for (const [key, name] of Object.entries(map)) {
-      if (txt.includes(name)) {
-        card.style.display = cfg[key] === false ? "none" : "";
+  const unsub = onSnapshot(
+    doc(db, "settings", "main"),
+    snap => {
+      if (!snap.exists()) return;
+      const s = snap.data();
+      if (s.telegram) document.querySelectorAll('a[aria-label="Telegram"]').forEach(el => el.href = s.telegram);
+      if (s.instagram) document.querySelectorAll('a[aria-label="Instagram"]').forEach(el => el.href = s.instagram);
+      if (s.youtube)   document.querySelectorAll('a[aria-label="YouTube"]').forEach(el => el.href = s.youtube);
+      if (s.copyrightEn) {
+        document.querySelectorAll(".footer-bottom .lang-en").forEach(el => {
+          if (el.textContent.includes("©")) el.textContent = s.copyrightEn;
+        });
       }
-    }
-  });
+      if (s.copyrightAr) {
+        document.querySelectorAll(".footer-bottom .lang-ar").forEach(el => {
+          if (el.textContent.includes("©")) el.textContent = s.copyrightAr;
+        });
+      }
+    },
+    err => console.warn("[settings listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
-//  COURSES (index.html + plans.html)
+//  PAYMENT METHODS — Realtime listener
+//  (was getDocs, now onSnapshot for instant updates)
 // ==========================================
-async function loadCourses() {
-  const snap = await getDocs(collection(db, "courses"));
-  if (snap.empty) return;
-
-  const courses = snap.docs.map(d => clean(d.data()));
-
-  document.querySelectorAll(".courses-grid").forEach(grid => {
-    grid.innerHTML = "";
-    courses.forEach(c => {
-      const el = document.createElement("article");
-      el.className = "course-card fade-up visible";
-      el.setAttribute("data-category", (c.levelEn || "basics").toLowerCase());
-      el.innerHTML = `
-        <div class="glass-card">
-          <div class="course-image">
-            <span class="course-badge">
-              <span class="lang-en">${c.badgeEn || c.levelEn || ""}</span>
-              <span class="lang-ar">${c.badgeAr || c.levelAr || ""}</span>
-            </span>
-            <img src="${c.image || "assets/artwork-placeholder.jpg"}"
-                 alt="${c.titleEn || ""}"
-                 onerror="this.src='assets/artwork-placeholder.jpg'">
-          </div>
-          <div class="course-content">
-            <div class="course-meta">
-              <span><i class="fa-solid fa-clock"></i> ${c.duration || ""}</span>
-              <span><i class="fa-solid fa-layer-group"></i>
-                <span class="lang-en">${c.levelEn || ""}</span>
-                <span class="lang-ar">${c.levelAr || ""}</span>
-              </span>
-            </div>
-            <h3 class="course-title">
-              <span class="lang-en">${c.titleEn || ""}</span>
-              <span class="lang-ar">${c.titleAr || ""}</span>
-            </h3>
-            <p class="course-desc">
-              <span class="lang-en">${c.descEn || ""}</span>
-              <span class="lang-ar">${c.descAr || ""}</span>
-            </p>
-            <div class="course-pricing">
-              <div>
-                <div class="price-label">
-                  <span class="lang-en">Price</span>
-                  <span class="lang-ar">السعر</span>
-                </div>
-                <div class="price-value">$${c.price || 0}<span>.00</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="course-actions">
-            <a href="${c.introUrl || "https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz"}"
-               target="_blank" class="btn btn-secondary">
-              <span class="lang-en">Intro</span>
-              <span class="lang-ar">مقدمة</span>
-            </a>
-            <a href="thankyou.html" class="btn btn-primary">
-              <span class="lang-en">Get Access</span>
-              <span class="lang-ar">شراء الدورة</span>
-            </a>
-          </div>
-        </div>`;
-      grid.appendChild(el);
-    });
-    applyLang();
-  });
+function listenPayments() {
+  const unsub = onSnapshot(
+    doc(db, "payments", "config"),
+    snap => {
+      if (!snap.exists()) return;
+      const cfg = snap.data();
+      const map = {
+        bank: "Bank Transfer", mada: "Mada", visa: "Visa",
+        apple: "Apple Pay",   stc: "STC",   paypal: "PayPal"
+      };
+      document.querySelectorAll(".payment-method-card").forEach(card => {
+        const txt = card.textContent.trim();
+        for (const [key, name] of Object.entries(map)) {
+          if (txt.includes(name)) {
+            card.style.display = cfg[key] === false ? "none" : "";
+          }
+        }
+      });
+    },
+    err => console.warn("[payments listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
-//  REVIEWS (reviews.html)
+//  COURSES — Realtime listener
+//  (was getDocs, now onSnapshot — CRITICAL FIX)
 // ==========================================
-async function loadReviews() {
-  const snap = await getDocs(collection(db, "reviews"));
-  if (snap.empty) return;
+function buildCourseHTML(c) {
+  return `
+    <div class="glass-card">
+      <div class="course-image">
+        <span class="course-badge">
+          <span class="lang-en">${esc(c.badgeEn || c.levelEn)}</span>
+          <span class="lang-ar">${esc(c.badgeAr || c.levelAr)}</span>
+        </span>
+        <img src="${esc(c.image || "assets/artwork-placeholder.jpg")}"
+             alt="${esc(c.titleEn)}"
+             loading="lazy"
+             onerror="this.src='assets/artwork-placeholder.jpg'">
+      </div>
+      <div class="course-content">
+        <div class="course-meta">
+          <span><i class="fa-solid fa-clock"></i> ${esc(c.duration)}</span>
+          <span><i class="fa-solid fa-layer-group"></i>
+            <span class="lang-en">${esc(c.levelEn)}</span>
+            <span class="lang-ar">${esc(c.levelAr)}</span>
+          </span>
+        </div>
+        <h3 class="course-title">
+          <span class="lang-en">${esc(c.titleEn)}</span>
+          <span class="lang-ar">${esc(c.titleAr)}</span>
+        </h3>
+        <p class="course-desc">
+          <span class="lang-en">${esc(c.descEn)}</span>
+          <span class="lang-ar">${esc(c.descAr)}</span>
+        </p>
+        <div class="course-pricing">
+          <div>
+            <div class="price-label">
+              <span class="lang-en">Price</span>
+              <span class="lang-ar">السعر</span>
+            </div>
+            <div class="price-value">$${esc(c.price || 0)}<span>.00</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="course-actions">
+        <a href="${esc(c.introUrl || "https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz")}"
+           target="_blank" class="btn btn-secondary">
+          <span class="lang-en">Intro</span>
+          <span class="lang-ar">مقدمة</span>
+        </a>
+        <a href="thankyou.html" class="btn btn-primary">
+          <span class="lang-en">Get Access</span>
+          <span class="lang-ar">شراء الدورة</span>
+        </a>
+      </div>
+    </div>`;
+}
 
-  const reviews = snap.docs.map(d => clean(d.data()));
+function listenCourses() {
+  const grids = document.querySelectorAll(".courses-grid");
+  if (!grids.length) return;
+
+  const unsub = onSnapshot(
+    collection(db, "courses"),
+    snap => {
+      if (snap.empty) return; // keep static HTML fallback
+
+      const courses = snap.docs.map(d => clean(d.data()));
+
+      grids.forEach(grid => {
+        grid.innerHTML = "";
+        courses.forEach(c => {
+          const el = document.createElement("article");
+          el.className = "course-card fade-up visible";
+          el.setAttribute("data-category", (c.levelEn || "basics").toLowerCase());
+          el.innerHTML = buildCourseHTML(c);
+          grid.appendChild(el);
+        });
+        applyLang();
+      });
+    },
+    err => console.warn("[courses listener]", err.message)
+  );
+  registerListener(unsub);
+}
+
+// ==========================================
+//  REVIEWS — Realtime listener
+//  (was getDocs, now onSnapshot — CRITICAL FIX)
+// ==========================================
+function listenReviews() {
   const grid = document.querySelector(".testimonials-grid");
   if (!grid) return;
 
-  grid.innerHTML = "";
-  reviews.forEach(r => {
-    const stars = Array(Number(r.rating) || 5)
-      .fill('<i class="fa-solid fa-star"></i>').join("");
-    const el = document.createElement("article");
-    el.className = "glass-card testimonial-card fade-up";
-    el.innerHTML = `
-      <div class="testimonial-stars">${stars}</div>
-      <p class="testimonial-quote">
-        <span class="lang-en">"${r.quoteEn || ""}"</span>
-        <span class="lang-ar">"${r.quoteAr || ""}"</span>
-      </p>
-      <div class="testimonial-user">
-        <img class="user-avatar" src="assets/instructor.png" alt="${r.name || ""}">
-        <div>
-          <span class="user-name">${r.name || ""}</span>
-          <span class="user-title">
-            <span class="lang-en">${r.courseEn || ""}</span>
-            <span class="lang-ar">${r.courseAr || ""}</span>
-          </span>
-        </div>
-      </div>`;
-    grid.appendChild(el);
-  });
-  applyLang();
+  const unsub = onSnapshot(
+    collection(db, "reviews"),
+    snap => {
+      if (snap.empty) return; // keep static HTML fallback
+
+      const reviews = snap.docs.map(d => clean(d.data()));
+      grid.innerHTML = "";
+      reviews.forEach(r => {
+        const stars = Array(Math.min(Math.max(Number(r.rating) || 5, 1), 5))
+          .fill('<i class="fa-solid fa-star"></i>').join("");
+        const el = document.createElement("article");
+        el.className = "glass-card testimonial-card fade-up visible";
+        el.innerHTML = `
+          <div class="testimonial-stars">${stars}</div>
+          <p class="testimonial-quote">
+            <span class="lang-en">"${esc(r.quoteEn)}"</span>
+            <span class="lang-ar">"${esc(r.quoteAr)}"</span>
+          </p>
+          <div class="testimonial-user">
+            <img class="user-avatar" src="assets/instructor.png" alt="${esc(r.name)}" loading="lazy">
+            <div>
+              <span class="user-name">${esc(r.name)}</span>
+              <span class="user-title">
+                <span class="lang-en">${esc(r.courseEn)}</span>
+                <span class="lang-ar">${esc(r.courseAr)}</span>
+              </span>
+            </div>
+          </div>`;
+        grid.appendChild(el);
+      });
+      applyLang();
+    },
+    err => console.warn("[reviews listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
-//  FAQ (faq.html)
+//  FAQ — Realtime listener
+//  (was getDocs, now onSnapshot — CRITICAL FIX)
 // ==========================================
-async function loadFAQ() {
-  const snap = await getDocs(collection(db, "faq"));
-  if (snap.empty) return;
-
-  const faqs = snap.docs.map(d => clean(d.data()));
+function listenFAQ() {
   const list = document.querySelector(".faq-list");
   if (!list) return;
 
-  list.innerHTML = "";
-  faqs.forEach(f => {
-    const el = document.createElement("div");
-    el.className = "faq-item glass-card fade-up";
-    el.innerHTML = `
-      <button class="faq-trigger" aria-expanded="false">
-        <span>
-          <span class="lang-en">${f.questionEn || ""}</span>
-          <span class="lang-ar">${f.questionAr || ""}</span>
-        </span>
-        <i class="fa-solid fa-plus faq-icon-indicator"></i>
-      </button>
-      <div class="faq-panel">
-        <div class="faq-content">
-          <span class="lang-en">${f.answerEn || ""}</span>
-          <span class="lang-ar">${f.answerAr || ""}</span>
-        </div>
-      </div>`;
-    list.appendChild(el);
-  });
+  const unsub = onSnapshot(
+    collection(db, "faq"),
+    snap => {
+      if (snap.empty) return; // keep static HTML fallback
 
-  // إعادة تشغيل الـ accordion
-  list.querySelectorAll(".faq-item").forEach(item => {
-    const trigger = item.querySelector(".faq-trigger");
-    const panel   = item.querySelector(".faq-panel");
-    if (!trigger || !panel) return;
-    trigger.addEventListener("click", () => {
-      const open = item.classList.contains("active");
-      list.querySelectorAll(".faq-item").forEach(o => {
-        o.classList.remove("active");
-        const p = o.querySelector(".faq-panel");
-        if (p) p.style.maxHeight = null;
+      const faqs = snap.docs.map(d => clean(d.data()));
+      list.innerHTML = "";
+      faqs.forEach(f => {
+        const el = document.createElement("div");
+        el.className = "faq-item glass-card fade-up visible";
+        el.innerHTML = `
+          <button class="faq-trigger" aria-expanded="false">
+            <span>
+              <span class="lang-en">${esc(f.questionEn)}</span>
+              <span class="lang-ar">${esc(f.questionAr)}</span>
+            </span>
+            <i class="fa-solid fa-plus faq-icon-indicator"></i>
+          </button>
+          <div class="faq-panel">
+            <div class="faq-content">
+              <span class="lang-en">${esc(f.answerEn)}</span>
+              <span class="lang-ar">${esc(f.answerAr)}</span>
+            </div>
+          </div>`;
+        list.appendChild(el);
       });
-      if (!open) {
-        item.classList.add("active");
-        panel.style.maxHeight = panel.scrollHeight + "px";
-      }
-    });
-  });
-  applyLang();
+
+      // Re-bind accordion after each snapshot update
+      list.querySelectorAll(".faq-item").forEach(item => {
+        const trigger = item.querySelector(".faq-trigger");
+        const panel   = item.querySelector(".faq-panel");
+        if (!trigger || !panel) return;
+        trigger.addEventListener("click", () => {
+          const open = item.classList.contains("active");
+          list.querySelectorAll(".faq-item").forEach(o => {
+            o.classList.remove("active");
+            const p = o.querySelector(".faq-panel");
+            if (p) p.style.maxHeight = null;
+          });
+          if (!open) {
+            item.classList.add("active");
+            panel.style.maxHeight = panel.scrollHeight + "px";
+          }
+        });
+      });
+      applyLang();
+    },
+    err => console.warn("[faq listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
-//  ARTWORKS (index.html gallery)
+//  ARTWORKS — Realtime listener
+//  (was getDocs, now onSnapshot — CRITICAL FIX)
 // ==========================================
-async function loadArtworks() {
-  const snap = await getDocs(collection(db, "artworks"));
+function listenArtworks() {
   const carousel = document.querySelector("#artwork-carousel");
   if (!carousel) return;
 
-  if (snap.empty) {
-    if (window.initCarousel) window.initCarousel();
-    return;
-  }
+  let isFirstLoad = true;
 
-  const artworks = snap.docs.map(d => clean(d.data()));
+  const unsub = onSnapshot(
+    collection(db, "artworks"),
+    snap => {
+      if (snap.empty) {
+        // No data in Firebase — keep static fallback cards, just init carousel
+        if (isFirstLoad && window.initCarousel) {
+          window.initCarousel();
+          isFirstLoad = false;
+        }
+        return;
+      }
 
-  // NEW CAROUSEL: Smoothly transition from skeleton/static to dynamic Firebase data
-  carousel.style.opacity = "0";
-  carousel.style.transition = "opacity 0.3s ease";
-  
-  setTimeout(() => {
-    carousel.innerHTML = "";
-    artworks.forEach((art, index) => {
-      const el = document.createElement("div");
-      el.className = "artwork-carousel-card";
-      el.style.setProperty("--index", index);
-      el.innerHTML = `
-        <div class="glass-card">
-          <img src="${art.image || "assets/artwork-placeholder.jpg"}"
-               alt="${art.titleEn || ""}"
-               onerror="this.src='assets/artwork-placeholder.jpg'">
-          <div class="artwork-overlay">
-            <span class="artwork-category">
-              <span class="lang-en">${art.categoryEn || ""}</span>
-              <span class="lang-ar">${art.categoryAr || ""}</span>
-            </span>
-            <h4 class="artwork-title">
-              <span class="lang-en">${art.titleEn || ""}</span>
-              <span class="lang-ar">${art.titleAr || ""}</span>
-            </h4>
-          </div>
-        </div>`;
-      carousel.appendChild(el);
-    });
-    applyLang();
-    carousel.style.opacity = "1";
-    
-    // NEW CAROUSEL: Initialize rotation & 3D placement after DOM injection
-    if (window.initCarousel) {
-      window.initCarousel();
-    }
-  }, 300);
+      const artworks = snap.docs.map(d => clean(d.data()));
+
+      // Smooth transition: fade out → replace → fade in
+      const doUpdate = () => {
+        carousel.innerHTML = "";
+        artworks.forEach((art, index) => {
+          const el = document.createElement("div");
+          el.className = "artwork-carousel-card";
+          el.style.setProperty("--index", index);
+          el.innerHTML = `
+            <div class="glass-card">
+              <img src="${esc(art.image || "assets/artwork-placeholder.jpg")}"
+                   alt="${esc(art.titleEn)}"
+                   loading="lazy"
+                   onerror="this.src='assets/artwork-placeholder.jpg'">
+              <div class="artwork-overlay">
+                <span class="artwork-category">
+                  <span class="lang-en">${esc(art.categoryEn)}</span>
+                  <span class="lang-ar">${esc(art.categoryAr)}</span>
+                </span>
+                <h4 class="artwork-title">
+                  <span class="lang-en">${esc(art.titleEn)}</span>
+                  <span class="lang-ar">${esc(art.titleAr)}</span>
+                </h4>
+              </div>
+            </div>`;
+          carousel.appendChild(el);
+        });
+        applyLang();
+        carousel.style.opacity = "1";
+        carousel.style.transition = "opacity 0.4s ease";
+
+        // Re-initialize carousel with new cards
+        if (window.initCarousel) {
+          window.initCarousel();
+        }
+      };
+
+      if (isFirstLoad) {
+        // First load: fade out placeholder → inject real data
+        carousel.style.transition = "opacity 0.3s ease";
+        carousel.style.opacity = "0";
+        setTimeout(doUpdate, 300);
+        isFirstLoad = false;
+      } else {
+        // Subsequent updates (admin changed something): update smoothly
+        carousel.style.transition = "opacity 0.2s ease";
+        carousel.style.opacity = "0";
+        setTimeout(doUpdate, 200);
+      }
+    },
+    err => console.warn("[artworks listener]", err.message)
+  );
+  registerListener(unsub);
 }
 
 // ==========================================
-//  INIT
+//  INIT — Start all listeners based on page
 // ==========================================
-async function init() {
+function init() {
+  // Always listen to colors and settings on every page
   listenColors();
   listenSettings();
 
   if (PAGE === "index.html" || PAGE === "") {
-    await Promise.all([loadCourses(), loadArtworks(), loadPayments()]);
+    listenCourses();
+    listenArtworks();
+    listenPayments();
   }
-  if (PAGE === "plans.html")   await loadCourses();
-  if (PAGE === "reviews.html") await loadReviews();
-  if (PAGE === "faq.html")     await loadFAQ();
+
+  if (PAGE === "plans.html")   listenCourses();
+  if (PAGE === "reviews.html") listenReviews();
+  if (PAGE === "faq.html")     listenFAQ();
 }
 
-init().catch(console.error);
+init();
