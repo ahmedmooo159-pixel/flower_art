@@ -91,65 +91,81 @@
 
     <div class="container">
       <div class="glass-card thank-you-card fade-up visible"
-        style="margin: 0 auto; border-color: rgba(16, 185, 129, 0.25);">
+        style="margin: 0 auto; border-color: var(--accent-blue);">
 
-        <!-- Pulsing green success indicator -->
-        <div class="success-icon-wrapper">
-          <i class="fa-solid fa-check"></i>
+        <div id="success-elements" style="display: none;">
+          <!-- Pulsing green success indicator -->
+          <div class="success-icon-wrapper">
+            <i class="fa-solid fa-check"></i>
+          </div>
+
+          <h1 class="thank-you-title">
+            <span class="lang-en">Access Secured!</span>
+            <span class="lang-ar">تم تأكيد الشراء!</span>
+          </h1>
+
+          <p class="thank-you-desc">
+            <span class="lang-en">Thank you for your purchase. We have verified your transaction and dispatched your
+              private Telegram channel link.</span>
+            <span class="lang-ar">شكراً لك على الشراء. لقد تحققنا من عمليتك وأرسلنا إليك رابط دعوتك الخاص لقناة
+              تليجرام.</span>
+          </p>
+
+          <!-- Access Steps -->
+          <div class="telegram-instruction">
+            <h3
+              style="color: #fff; margin-bottom: 1.25rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-brands fa-telegram" style="color: #0088cc; font-size: 1.3rem;"></i>
+              <span class="lang-en">How to Access Your Course</span>
+              <span class="lang-ar">خطوات الوصول إلى دورتك التدريبية</span>
+            </h3>
+
+            <div class="instruction-step">
+              <div class="step-badge">1</div>
+              <div class="step-text">
+                <span class="lang-en">Check the email inbox associated with your checkout transaction.</span>
+                <span class="lang-ar">تفقد صندوق الوارد في البريد الإلكتروني الذي استخدمته أثناء عملية الدفع.</span>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-badge">2</div>
+              <div class="step-text">
+                <span class="lang-en">Open the email titled <strong>"Your Tecture Art Private invite
+                    link"</strong>.</span>
+                <span class="lang-ar">افتح رسالة البريد الإلكتروني الواردة بعنوان <strong>"رابط دعوتك الخاص من
+                    TEXTURE&nbsp;ART"</strong>.</span>
+              </div>
+            </div>
+
+            <div class="instruction-step">
+              <div class="step-badge">3</div>
+              <div class="step-text">
+                <span class="lang-en">Click on the single-use invite button to launch Telegram and join your private
+                  channel cohort.</span>
+                <span class="lang-ar">اضغط على زر الدعوة أحادي الاستخدام لفتح تطبيق تليجرام والانضمام لقناتك الخاصة
+                  تلقائياً.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <h1 class="thank-you-title">
-          <span class="lang-en">Access Secured!</span>
-          <span class="lang-ar">تم تأكيد الشراء!</span>
-        </h1>
-
-        <p class="thank-you-desc">
-          <span class="lang-en">Thank you for your purchase. We have verified your transaction and dispatched your
-            private Telegram channel link.</span>
-          <span class="lang-ar">شكراً لك على الشراء. لقد تحققنا من عمليتك وأرسلنا إليك رابط دعوتك الخاص لقناة
-            تليجرام.</span>
-        </p>
-
-        <!-- Access Steps -->
-        <div class="telegram-instruction">
-          <h3
-            style="color: #fff; margin-bottom: 1.25rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="fa-brands fa-telegram" style="color: #0088cc; font-size: 1.3rem;"></i>
-            <span class="lang-en">How to Access Your Course</span>
-            <span class="lang-ar">خطوات الوصول إلى دورتك التدريبية</span>
-          </h3>
-
-          <div class="instruction-step">
-            <div class="step-badge">1</div>
-            <div class="step-text">
-              <span class="lang-en">Check the email inbox associated with your checkout transaction.</span>
-              <span class="lang-ar">تفقد صندوق الوارد في البريد الإلكتروني الذي استخدمته أثناء عملية الدفع.</span>
-            </div>
+        <div id="payment-status-container" style="text-align: center; padding: 2rem 0;">
+          <div id="status-icon" style="font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--accent-blue);">
+            <i class="fa-solid fa-spinner fa-spin"></i>
           </div>
-
-          <div class="instruction-step">
-            <div class="step-badge">2</div>
-            <div class="step-text">
-              <span class="lang-en">Open the email titled <strong>"Your Tecture Art Private invite
-                  link"</strong>.</span>
-              <span class="lang-ar">افتح رسالة البريد الإلكتروني الواردة بعنوان <strong>"رابط دعوتك الخاص من
-                  TEXTURE&nbsp;ART"</strong>.</span>
-            </div>
-          </div>
-
-          <div class="instruction-step">
-            <div class="step-badge">3</div>
-            <div class="step-text">
-              <span class="lang-en">Click on the single-use invite button to launch Telegram and join your private
-                channel cohort.</span>
-              <span class="lang-ar">اضغط على زر الدعوة أحادي الاستخدام لفتح تطبيق تليجرام والانضمام لقناتك الخاصة
-                تلقائياً.</span>
-            </div>
-          </div>
+          <h2 id="status-title" style="font-size: 1.8rem; margin-bottom: 1rem; color: #fff;">
+            <span class="lang-en">Verifying payment...</span>
+            <span class="lang-ar">جاري التحقق من عملية الدفع...</span>
+          </h2>
+          <p id="status-desc" style="max-width: 500px; margin: 0 auto; line-height: 1.6; color: var(--text-secondary);">
+            <span class="lang-en">Please wait while we check your transaction with PayTabs. This should only take a few seconds.</span>
+            <span class="lang-ar">يرجى الانتظار بينما نتحقق من عمليتك مع بوابة الدفع PayTabs. لن يستغرق هذا سوى بضع ثوانٍ.</span>
+          </p>
         </div>
 
         <!-- Call to actions -->
-        <div style="display: flex; gap: 1rem; justify-content: center;">
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
           <a href="index.html" class="btn btn-secondary">
             <span class="lang-en">Return Home</span>
             <span class="lang-ar">العودة للرئيسية</span>
@@ -274,6 +290,107 @@
   <!-- Main JavaScript File -->
   <script src="js/main.js"></script>
 <script type="module" src="js/firebase-site.js"></script>
+  <script type="module">
+    import { db } from "./js/firebase-config.js";
+    import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get("orderId");
+
+      const successElements = document.getElementById("success-elements");
+      const statusContainer = document.getElementById("payment-status-container");
+      const statusIcon = document.getElementById("status-icon");
+      const statusTitle = document.getElementById("status-title");
+      const statusDesc = document.getElementById("status-desc");
+      const thankYouCard = document.querySelector(".thank-you-card");
+
+      const isRTL = document.body.classList.contains("rtl");
+      const updateLangDisplay = (container) => {
+        if (!container) return;
+        if (isRTL) {
+          container.querySelectorAll(".lang-en").forEach(el => el.style.setProperty("display", "none", "important"));
+          container.querySelectorAll(".lang-ar").forEach(el => el.style.removeProperty("display"));
+        } else {
+          container.querySelectorAll(".lang-ar").forEach(el => el.style.setProperty("display", "none", "important"));
+          container.querySelectorAll(".lang-en").forEach(el => el.style.removeProperty("display"));
+        }
+      };
+
+      if (!orderId) {
+        statusIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>';
+        statusTitle.innerHTML = `
+          <span class="lang-en">Order ID Missing</span>
+          <span class="lang-ar">معرف الطلب مفقود</span>
+        `;
+        statusDesc.innerHTML = `
+          <span class="lang-en">We could not verify your payment because the order reference is missing. If you completed your purchase, please contact support.</span>
+          <span class="lang-ar">لم نتمكن من التحقق من عمليتك لعدم وجود مرجع للطلب. إذا كنت قد أكملت عملية الدفع، يرجى الاتصال بالدعم.</span>
+        `;
+        updateLangDisplay(statusTitle);
+        updateLangDisplay(statusDesc);
+        if (thankYouCard) thankYouCard.style.borderColor = "rgba(239, 68, 68, 0.25)";
+        return;
+      }
+
+      // Start listening to order snapshot
+      const unsub = onSnapshot(doc(db, "orders", orderId), (snap) => {
+        if (!snap.exists()) {
+          statusIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>';
+          statusTitle.innerHTML = `
+            <span class="lang-en">Order Not Found</span>
+            <span class="lang-ar">الطلب غير موجود</span>
+          `;
+          statusDesc.innerHTML = `
+            <span class="lang-en">The specified order ID does not exist.</span>
+            <span class="lang-ar">معرّف الطلب المحدد غير موجود.</span>
+          `;
+          updateLangDisplay(statusTitle);
+          updateLangDisplay(statusDesc);
+          if (thankYouCard) thankYouCard.style.borderColor = "rgba(239, 68, 68, 0.25)";
+          return;
+        }
+
+        const order = snap.data();
+        if (order.status === "paid") {
+          statusContainer.style.display = "none";
+          successElements.style.display = "block";
+          if (thankYouCard) thankYouCard.style.borderColor = "rgba(16, 185, 129, 0.25)";
+          unsub();
+        } else if (order.status === "failed") {
+          statusIcon.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
+          statusTitle.innerHTML = `
+            <span class="lang-en">Payment Failed</span>
+            <span class="lang-ar">فشلت عملية الدفع</span>
+          `;
+          statusDesc.innerHTML = `
+            <span class="lang-en">Your transaction could not be authorized or was cancelled. Please try again.</span>
+            <span class="lang-ar">لم نتمكن من اعتماد عمليتك أو تم إلغاؤها. يرجى المحاولة مجدداً.</span>
+          `;
+          updateLangDisplay(statusTitle);
+          updateLangDisplay(statusDesc);
+          if (thankYouCard) thankYouCard.style.borderColor = "rgba(239, 68, 68, 0.25)";
+          unsub();
+        } else {
+          updateLangDisplay(statusTitle);
+          updateLangDisplay(statusDesc);
+        }
+      }, (error) => {
+        console.error("Firestore listening error:", error);
+        statusIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i>';
+        statusTitle.innerHTML = `
+          <span class="lang-en">Verification Error</span>
+          <span class="lang-ar">خطأ في التحقق</span>
+        `;
+        statusDesc.innerHTML = `
+          <span class="lang-en">Failed to connect to verification server. Please try refreshing the page.</span>
+          <span class="lang-ar">فشل الاتصال بخادم التحقق. يرجى محاولة تحديث الصفحة.</span>
+        `;
+        updateLangDisplay(statusTitle);
+        updateLangDisplay(statusDesc);
+      });
+    });
+  </script>
 </body>
 
 </html>

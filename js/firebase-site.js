@@ -233,24 +233,23 @@ function listenReviews() {
       reviews.forEach(r => {
         const stars = Array(Math.min(Math.max(Number(r.rating) || 5, 1), 5))
           .fill('<i class="fa-solid fa-star"></i>').join("");
+        const avatarSrc = r.photoUrl ? r.photoUrl : "assets/instructor.png";
         const el = document.createElement("article");
         el.className = "glass-card testimonial-card fade-up visible";
         el.innerHTML = `
+          <img class="user-avatar" src="${esc(avatarSrc)}" alt="${esc(r.name)}" loading="lazy">
+          <div class="user-details">
+            <span class="user-name">${esc(r.name)}</span>
+            <span class="user-title">
+              <span class="lang-en">${esc(r.courseEn)}</span>
+              <span class="lang-ar">${esc(r.courseAr)}</span>
+            </span>
+          </div>
           <div class="testimonial-stars">${stars}</div>
           <p class="testimonial-quote">
             <span class="lang-en">"${esc(r.quoteEn)}"</span>
             <span class="lang-ar">"${esc(r.quoteAr)}"</span>
-          </p>
-          <div class="testimonial-user">
-            <img class="user-avatar" src="assets/instructor.png" alt="${esc(r.name)}" loading="lazy">
-            <div>
-              <span class="user-name">${esc(r.name)}</span>
-              <span class="user-title">
-                <span class="lang-en">${esc(r.courseEn)}</span>
-                <span class="lang-ar">${esc(r.courseAr)}</span>
-              </span>
-            </div>
-          </div>`;
+          </p>`;
         grid.appendChild(el);
       });
       applyLang();

@@ -4,13 +4,16 @@
 //  <script type="module" src="js/firebase-admin.js"></script>
 // ==========================================
 
-import { db } from "./firebase-config.js";
+import { db, storage } from "./firebase-config.js";
 import {
   doc, setDoc, getDoc,
   collection, getDocs,
   deleteDoc, onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  ref, uploadBytesResumable, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 // ==========================================
 //  IMAGE UPLOAD — ImgBB
 // ==========================================
@@ -255,6 +258,108 @@ window.addEventListener("DOMContentLoaded", async () => {
     _deleteReview(id);
     const ok = await delDoc(C.REVIEWS, id);
     toast(ok ? "✅ تم حذف التقييم من Firebase" : "❌ فشل الحذف", ok ? "success" : "error");
+  };
+
+  A.loadReviewsPanel = function () {
+    const reviews = this.getData('reviews_data', this.defaultReviews);
+    const tbody = document.querySelector('#reviews-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    reviews.forEach((r, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td><strong>${r.name}</strong></td>
+        <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+        <td>
+          ${r.courseEn}<br>
+          <small class="text-muted">${r.courseAr}</small>
+        </td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            ${r.photoUrl ? `<img src="${r.photoUrl}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-muted);" />` : ''}
+            <button class="btn btn-secondary btn-small upload-photo-btn" data-id="${r.id}">
+              <i class="fa-solid fa-upload"></i>
+              <span class="lang-en">Upload Photo</span>
+              <span class="lang-ar">رفع صورة</span>
+            </button>
+            <button class="btn btn-primary btn-small btn-danger delete-review-btn" data-id="${r.id}">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.upload-photo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          btn.disabled = true;
+          const fileRef = ref(storage, `reviews/${id}/photo.jpg`);
+          const uploadTask = uploadBytesResumable(fileRef, file);
+
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+              btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading... ${progress}%`;
+            },
+            (error) => {
+              console.error("Upload error:", error);
+              toast("❌ Upload failed: " + error.message, "error");
+              btn.disabled = false;
+              btn.innerHTML = `<i class="fa-solid fa-upload"></i> <span class="lang-en">Upload Photo</span><span class="lang-ar">رفع صورة</span>`;
+            },
+            async () => {
+              try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                await saveDoc(C.REVIEWS, id, { photoUrl: downloadURL });
+
+                const currentReviews = A.getData('reviews_data', A.defaultReviews);
+                const item = currentReviews.find(x => String(x.id) === String(id));
+                if (item) {
+                  item.photoUrl = downloadURL;
+                  A.setData('reviews_data', currentReviews);
+                }
+
+                toast("✓ Photo uploaded", "success");
+                A.loadReviewsPanel();
+              } catch (err) {
+                console.error("Save URL error:", err);
+                toast("❌ Failed to save photo URL", "error");
+              } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-upload"></i> <span class="lang-en">Upload Photo</span><span class="lang-ar">رفع صورة</span>`;
+              }
+            }
+          );
+        };
+        fileInput.click();
+      });
+    });
+
+    document.querySelectorAll('.delete-review-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-id'));
+        this.deleteReview(id);
+      });
+    });
+
+    const form = document.getElementById('reviews-form');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        this.saveReview();
+      };
+    }
   };
 
   // ==========================================

@@ -2774,3 +2774,68 @@ body.rtl .artwork-category {
     box-shadow: 0 10px 30px rgba(201, 116, 143, 0.4);
   }
 }
+
+/* === REVIEW CARD UPGRADE === */
+.testimonial-card.glass-card {
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem;
+  text-align: start;
+}
+
+.testimonial-card.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+}
+
+.testimonial-card.glass-card .user-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent-blue);
+  margin-bottom: 1rem;
+}
+
+.testimonial-card.glass-card .user-details {
+  margin-bottom: 0.75rem;
+}
+
+.testimonial-card.glass-card .user-name {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.testimonial-card.glass-card .user-title {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.testimonial-card.glass-card .testimonial-stars {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.testimonial-card.glass-card .testimonial-stars i {
+  color: #E8C97E;
+}
+
+.testimonial-card.glass-card .testimonial-quote {
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
