@@ -892,10 +892,11 @@ window.initCarousel = function() {
   const carousel = document.querySelector("#artwork-carousel");
   if (!carousel) return;
 
-  const cards = carousel.querySelectorAll(".artwork-carousel-card");
+  const wrapper = document.querySelector(".artwork-carousel-wrapper");
+  let cards = carousel.querySelectorAll(".artwork-carousel-card");
   if (!cards.length) return;
 
-  // Clean up any existing loops or listeners before re-initializing
+  // Clean up any existing loops before starting a new one
   if (carouselAnimationFrameId) {
     cancelAnimationFrame(carouselAnimationFrameId);
     carouselAnimationFrameId = null;
@@ -905,207 +906,191 @@ window.initCarousel = function() {
     mobileScrollInterval = null;
   }
 
-  // Detect mode
-  isMobileCarousel = window.innerWidth < 768;
-
-  if (isMobileCarousel) {
-    initMobileCarousel(carousel, cards);
-  } else {
-    initDesktopCarousel(carousel, cards);
+  // Check if we need to duplicate the cards (e.g. if loaded dynamically from Firebase without clones)
+  const hasClones = carousel.querySelectorAll(".artwork-carousel-card.artwork-clone").length > 0;
+  if (!hasClones) {
+    cards.forEach((card, index) => {
+      const clone = card.cloneNode(true);
+      clone.classList.add("artwork-clone");
+      clone.style.setProperty("--index", cards.length + index);
+      carousel.appendChild(clone);
+    });
+    // Re-query cards to include the newly appended clones
+    cards = carousel.querySelectorAll(".artwork-carousel-card");
   }
-};
 
-function initDesktopCarousel(carousel, cards) {
-  const totalCards = cards.length;
-  const theta = 360 / totalCards;
-  
-  // Set dynamic 3D radius (translateZ)
-  const radius = window.innerWidth >= 1200 ? 400 : 280;
+  // Calculate half of the scroll width (since cards are duplicated)
+  let halfScrollWidth = carousel.scrollWidth / 2;
+  const updateDimensions = () => {
+    halfScrollWidth = carousel.scrollWidth / 2;
+  };
 
-  // Apply 3D positions to each card
-  cards.forEach((card, index) => {
-    card.style.transform = `rotateY(${index * theta}deg) translateZ(${radius}px)`;
-    card.classList.remove("hovered");
-    
-    // Clear any mobile-specific styling/events
-    card.onclick = null;
-
-    // Desktop hover listeners
-    card.onmouseenter = () => {
-      isCarouselHovered = true;
-      carousel.classList.add("has-hovered-card");
-      card.classList.add("hovered");
-    };
-
-    card.onmouseleave = () => {
-      isCarouselHovered = false;
-      carousel.classList.remove("has-hovered-card");
-      card.classList.remove("hovered");
-    };
-  });
-
-  // Setup loop
-  let lastTime = performance.now();
-  function rotateLoop(time) {
-    if (!isCarouselHovered) {
-      const isRTL = document.body.classList.contains("rtl");
-      const direction = isRTL ? -1 : 1;
-      // Elegant slow rotation speed (approx 1 full turn every 25 seconds)
-      const rotationSpeed = 360 / (25 * 1000); // degrees per millisecond
-      const delta = time - lastTime;
-      carouselAngle += rotationSpeed * delta * direction;
-      
-      carousel.style.transform = `rotateY(${carouselAngle}deg)`;
-      
-      // Update opacity and z-index for 3D depth
-      updateDepth(cards, theta);
-    }
-    lastTime = time;
-    carouselAnimationFrameId = requestAnimationFrame(rotateLoop);
-  }
-  
-  // Trigger initial depth update
-  updateDepth(cards, theta);
-  
-  carouselAnimationFrameId = requestAnimationFrame(rotateLoop);
-}
-
-function updateDepth(cards, theta) {
-  cards.forEach((card, index) => {
-    const cardAngle = (index * theta) + carouselAngle;
-    
-    let normAngle = cardAngle % 360;
-    if (normAngle < 0) normAngle += 360;
-    
-    const cosVal = Math.cos(normAngle * Math.PI / 180);
-    
-    // Opacity: Front = 1.0, Back = 0.35
-    const opacity = 0.35 + 0.65 * (cosVal + 1) / 2;
-    card.style.opacity = opacity;
-    
-    // Z-index: Front has high z-index (up to 200)
-    const zIndex = Math.round((cosVal + 1) * 100);
-    card.style.zIndex = zIndex;
-  });
-}
-
-function initMobileCarousel(carousel, cards) {
-  // Clear any desktop 3D transforms & styles
-  carousel.style.transform = "none";
-  carousel.style.transformStyle = "flat";
+  // Wait for images to load to get accurate dimensions
   cards.forEach(card => {
-    card.style.transform = "none";
-    card.style.opacity = "1";
-    card.style.zIndex = "";
-    card.style.position = "relative";
-    card.style.left = "auto";
-    card.style.top = "auto";
-    card.classList.remove("hovered");
-    
-    // Clear desktop hover events
-    card.onmouseenter = null;
-    card.onmouseleave = null;
+    const img = card.querySelector("img");
+    if (img) {
+      if (img.complete) {
+        updateDimensions();
+      } else {
+        img.addEventListener("load", updateDimensions);
+      }
+    }
+  });
 
-    // Mobile tap event listener (toggle zoom overlay)
-    card.onclick = (e) => {
-      e.stopPropagation();
-      const isAlreadyZoomed = card.classList.contains("hovered");
-      
-      // Clear hovered from all other cards
-      cards.forEach(c => c.classList.remove("hovered"));
-      carousel.classList.remove("has-hovered-card");
+  // State variables for auto-scroll and manual drag
+  if (!carousel._carouselState) {
+    carousel._carouselState = {
+      isPaused: false,
+      isDragging: false,
+      startX: 0,
+      startScrollLeft: 0,
+      resumeTimeout: null
+    };
 
-      if (!isAlreadyZoomed) {
-        card.classList.add("hovered");
+    const state = carousel._carouselState;
+
+    // Pause on hover over the wrapper, resume after 1.5s
+    if (wrapper) {
+      wrapper.addEventListener("mouseenter", () => {
+        if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+        state.isPaused = true;
+      });
+      wrapper.addEventListener("mouseleave", () => {
+        if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+        state.resumeTimeout = setTimeout(() => {
+          state.isPaused = false;
+        }, 1500);
+      });
+    }
+
+    // Bind card hover events (hover scale & overlay) and mobile tap toggles
+    cards.forEach(card => {
+      card.addEventListener("mouseenter", () => {
         carousel.classList.add("has-hovered-card");
+        card.classList.add("hovered");
+      });
+      card.addEventListener("mouseleave", () => {
+        carousel.classList.remove("has-hovered-card");
+        card.classList.remove("hovered");
+      });
+
+      // Mobile click toggle zoom
+      card.addEventListener("click", (e) => {
+        if (window.innerWidth < 768) {
+          e.stopPropagation();
+          const isAlreadyZoomed = card.classList.contains("hovered");
+          cards.forEach(c => c.classList.remove("hovered"));
+          carousel.classList.remove("has-hovered-card");
+
+          if (!isAlreadyZoomed) {
+            card.classList.add("hovered");
+            carousel.classList.add("has-hovered-card");
+          }
+        }
+      });
+    });
+
+    // Close hovered card on click outside on mobile
+    document.addEventListener("click", () => {
+      if (window.innerWidth < 768) {
+        cards.forEach(c => c.classList.remove("hovered"));
+        carousel.classList.remove("has-hovered-card");
+      }
+    });
+
+    // Mobile touch drag events
+    carousel.addEventListener("touchstart", (e) => {
+      state.isDragging = true;
+      state.isPaused = true;
+      if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+      state.startX = e.touches[0].clientX;
+      state.startScrollLeft = carousel.scrollLeft;
+    }, { passive: true });
+
+    carousel.addEventListener("touchmove", (e) => {
+      if (!state.isDragging) return;
+      const dx = state.startX - e.touches[0].clientX;
+      carousel.scrollLeft = state.startScrollLeft + dx;
+    }, { passive: true });
+
+    carousel.addEventListener("touchend", () => {
+      state.isDragging = false;
+      if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+      state.resumeTimeout = setTimeout(() => {
+        state.isPaused = false;
+      }, 1500);
+    }, { passive: true });
+
+    // Desktop mouse drag events for premium scroll interaction
+    let isMouseDown = false;
+    carousel.addEventListener("mousedown", (e) => {
+      state.isDragging = true;
+      state.isPaused = true;
+      isMouseDown = true;
+      if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+      state.startX = e.pageX - carousel.offsetLeft;
+      state.startScrollLeft = carousel.scrollLeft;
+      carousel.style.cursor = "grabbing";
+    });
+
+    carousel.addEventListener("mousemove", (e) => {
+      if (!isMouseDown) return;
+      e.preventDefault();
+      const x = e.pageX - carousel.offsetLeft;
+      const walk = state.startX - x;
+      carousel.scrollLeft = state.startScrollLeft + walk;
+    });
+
+    const stopMouseDrag = () => {
+      if (isMouseDown) {
+        isMouseDown = false;
+        state.isDragging = false;
+        carousel.style.cursor = "grab";
+        if (state.resumeTimeout) clearTimeout(state.resumeTimeout);
+        state.resumeTimeout = setTimeout(() => {
+          state.isPaused = false;
+        }, 1500);
       }
     };
-  });
 
-  // Tap outside to close hovered state
-  document.addEventListener("click", () => {
-    if (isMobileCarousel) {
-      cards.forEach(c => c.classList.remove("hovered"));
-      carousel.classList.remove("has-hovered-card");
-    }
-  });
-
-  // Setup mobile auto-scrolling
-  let scrollSpeed = 0.6; // pixels per frame
-  let isUserInteracting = false;
-  let interactionTimeout = null;
-
-  function autoScrollMobile() {
-    if (!isUserInteracting && !mobileIsScrolling && !carousel.classList.contains("has-hovered-card")) {
-      carousel.scrollLeft += scrollSpeed;
-      
-      // If reached the end of the scroll, wrap back to start
-      if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 1)) {
-        carousel.scrollLeft = 0;
-      }
-    }
+    carousel.addEventListener("mouseup", stopMouseDrag);
+    carousel.addEventListener("mouseleave", stopMouseDrag);
   }
 
-  mobileScrollInterval = setInterval(autoScrollMobile, 16); // ~60fps auto-scroll check
+  // Animation Loop (requestAnimationFrame)
+  function scrollLoop() {
+    const state = carousel._carouselState;
+    if (!state.isPaused && !state.isDragging) {
+      const isRTL = document.body.classList.contains("rtl");
+      let currentScroll = carousel.scrollLeft;
 
-  // Touch Swipe manual interaction tracking
-  let startX = 0;
-  let scrollLeftStart = 0;
+      // Safeguard halfScrollWidth calculation
+      if (halfScrollWidth <= 0) {
+        halfScrollWidth = carousel.scrollWidth / 2;
+      }
 
-  carousel.addEventListener("touchstart", (e) => {
-    isUserInteracting = true;
-    mobileIsScrolling = true;
-    if (interactionTimeout) clearTimeout(interactionTimeout);
-    
-    startX = e.touches[0].clientX;
-    scrollLeftStart = carousel.scrollLeft;
-  }, { passive: true });
+      if (halfScrollWidth > 0) {
+        if (isRTL) {
+          currentScroll -= 1; // Scroll left-to-right (reverse)
+        } else {
+          currentScroll += 1; // Scroll right-to-left (default)
+        }
 
-  carousel.addEventListener("touchmove", (e) => {
-    const dx = startX - e.touches[0].clientX;
-    carousel.scrollLeft = scrollLeftStart + dx;
-  }, { passive: true });
+        // Seamless infinite wrap around midpoint
+        if (currentScroll < 0) {
+          currentScroll = (currentScroll % halfScrollWidth) + halfScrollWidth;
+        } else if (currentScroll >= halfScrollWidth) {
+          currentScroll = currentScroll % halfScrollWidth;
+        }
 
-  carousel.addEventListener("touchend", () => {
-    mobileIsScrolling = false;
-    // Delay resuming auto-scroll for a natural feel
-    interactionTimeout = setTimeout(() => {
-      isUserInteracting = false;
-    }, 2000);
-  }, { passive: true });
+        carousel.scrollLeft = currentScroll;
+      }
+    }
+    carouselAnimationFrameId = requestAnimationFrame(scrollLoop);
+  }
 
-  // Mouse drag support for simulating touch on desktop/responsive modes
-  let isMouseDown = false;
-  carousel.addEventListener("mousedown", (e) => {
-    isMouseDown = true;
-    isUserInteracting = true;
-    mobileIsScrolling = true;
-    if (interactionTimeout) clearTimeout(interactionTimeout);
-    startX = e.pageX - carousel.offsetLeft;
-    scrollLeftStart = carousel.scrollLeft;
-  });
-
-  carousel.addEventListener("mousemove", (e) => {
-    if (!isMouseDown) return;
-    e.preventDefault();
-    const x = e.pageX - carousel.offsetLeft;
-    const walk = startX - x;
-    carousel.scrollLeft = scrollLeftStart + walk;
-  });
-
-  carousel.addEventListener("mouseup", () => {
-    isMouseDown = false;
-    mobileIsScrolling = false;
-    interactionTimeout = setTimeout(() => {
-      isUserInteracting = false;
-    }, 2000);
-  });
-
-  carousel.addEventListener("mouseleave", () => {
-    isMouseDown = false;
-    mobileIsScrolling = false;
-    isUserInteracting = false;
-  });
+  // Start the auto-scroll loop
+  carouselAnimationFrameId = requestAnimationFrame(scrollLoop);
 }
 
 // Window resize listener
