@@ -2,7 +2,7 @@ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/
 import { app } from "./firebase-config.js";
 
 const functions = getFunctions(app);
-const createPayment = httpsCallable(functions, "createPayment");
+const createPayment = httpsCallable(functions, "createPaymobPayment");
 
 // Inject CSS for checkout modal
 const style = document.createElement("style");
@@ -112,7 +112,7 @@ function showCheckoutModal(courseTitle, onConfirm) {
       </div>
       <div class="checkout-spinner" id="checkout-loading">
         <i class="fa-solid fa-spinner fa-spin" style="color: var(--accent-blue); font-size: 1.25rem;"></i>
-        <span class="lang-en">Redirecting to PayTabs...</span>
+        <span class="lang-en">Redirecting to Paymob...</span>
         <span class="lang-ar">جاري الانتقال لبوابة الدفع...</span>
       </div>
       <div class="checkout-modal-btns" id="checkout-actions">

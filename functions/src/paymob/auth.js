@@ -3,7 +3,7 @@ const logger = require("../utils/logger");
 
 async function authenticate(apiKey) {
   try {
-    const response = await axios.post("https://accept.paymob.com/api/auth/tokens", {
+    const response = await axios.post("https://accept-alpha.paymob.com/api/auth/tokens", {
       api_key: apiKey
     });
     return response.data.token;
