@@ -1,8 +1,24 @@
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
-import { app } from "./firebase-config.js";
+// ==========================================
+//  Payment API Configuration
+//  Update PAYMENT_API_BASE after Vercel deployment
+// ==========================================
+const PAYMENT_API_BASE = "https://antigravity-payment.vercel.app";
 
-const functions = getFunctions(app);
-const createPayment = httpsCallable(functions, "createPaymobPayment");
+async function createPayment(data) {
+  const response = await fetch(`${PAYMENT_API_BASE}/api/create-payment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Payment request failed (${response.status})`);
+  }
+
+  const result = await response.json();
+  return { data: result };
+}
 
 // Inject CSS for checkout modal
 const style = document.createElement("style");

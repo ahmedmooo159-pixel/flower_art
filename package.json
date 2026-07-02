@@ -1,0 +1,13 @@
+{
+  "name": "antigravity-payment-api",
+  "version": "1.0.0",
+  "description": "Vercel Serverless Functions for Paymob payment integration",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "axios": "^1.6.0"
+  }
+}

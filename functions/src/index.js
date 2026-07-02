@@ -1,9 +1,9 @@
 // ==========================================
 //  Firebase Cloud Functions — Paymob Integration
-//  Uses Firebase Functions v2 (onRequest)
+//  Uses Firebase Functions v2 (onCall + onRequest)
 // ==========================================
 
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { db, admin } = require("./utils/firebase");
 const { initiatePayment } = require("./paymob/paymobService");
 const { verifyHmac } = require("./paymob/webhook");
@@ -11,7 +11,7 @@ const config = require("./utils/config");
 const logger = require("./utils/logger");
 
 // ==========================================
-//  CORS helper
+//  CORS helper (for webhook only)
 // ==========================================
 const ALLOWED_ORIGINS = [
   "https://ahmedmooo159-pixel.github.io",
@@ -35,38 +35,45 @@ function setCorsHeaders(req, res) {
 
 // ==========================================
 //  createPaymobPayment
-//  POST — Creates a Paymob payment session
-//  and returns the iframe URL + token.
+//  onCall — Creates a Paymob payment session
+//  and returns the iframe URL as redirectUrl.
 // ==========================================
-exports.createPaymobPayment = onRequest(
+exports.createPaymobPayment = onCall(
   {
     region: "us-central1",
     secrets: ["PAYMOB_API_KEY"]
   },
-  async (req, res) => {
-    // Handle CORS preflight
-    setCorsHeaders(req, res);
-    if (req.method === "OPTIONS") {
-      return res.status(204).send("");
-    }
-
-    if (req.method !== "POST") {
-      return res.status(405).json({ success: false, error: "Method Not Allowed" });
-    }
-
+  async (request) => {
     try {
-      const { amount, currency, customer, courseId, courseTitle } = req.body;
+      const data = request.data;
+      const { courseId, courseTitle, price, customerEmail, customerName, lang } = data;
 
       // ---- Input validation ----
-      if (!amount || typeof amount !== "number" || amount <= 0) {
-        return res.status(400).json({ success: false, error: "Invalid or missing 'amount' (must be a positive number in cents)." });
+      if (!price || typeof price !== "number" || price <= 0) {
+        throw new HttpsError("invalid-argument", "Invalid or missing 'price' (must be a positive number).");
       }
-      if (!currency || typeof currency !== "string") {
-        return res.status(400).json({ success: false, error: "Invalid or missing 'currency'." });
+      if (!customerEmail) {
+        throw new HttpsError("invalid-argument", "Invalid or missing 'customerEmail'.");
       }
-      if (!customer || !customer.email || !customer.first_name) {
-        return res.status(400).json({ success: false, error: "Invalid or missing 'customer' (requires at least email and first_name)." });
+      if (!customerName) {
+        throw new HttpsError("invalid-argument", "Invalid or missing 'customerName'.");
       }
+
+      // Convert price (EGP) to amount in cents
+      const amountCents = Math.round(price * 100);
+      const currency = "EGP";
+
+      // Parse customer name into first/last
+      const nameParts = customerName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "Customer";
+      const lastName = nameParts.slice(1).join(" ") || "Customer";
+
+      const customer = {
+        first_name: firstName,
+        last_name: lastName,
+        email: customerEmail,
+        phone: ""
+      };
 
       // Create a Firestore payment document first (status: pending)
       const paymentRef = db.collection("payments").doc();
@@ -76,17 +83,13 @@ exports.createPaymobPayment = onRequest(
         paymentId,
         courseId: courseId || null,
         courseTitle: courseTitle || null,
-        amount,
-        currency: currency.toUpperCase(),
+        amount: amountCents,
+        currency,
         status: "pending",
-        customer: {
-          first_name: customer.first_name,
-          last_name: customer.last_name || "",
-          email: customer.email,
-          phone: customer.phone || ""
-        },
+        customer,
         orderId: null,
         transactionId: null,
+        lang: lang || "en",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
@@ -95,8 +98,8 @@ exports.createPaymobPayment = onRequest(
 
       // Orchestrate the Paymob flow
       const result = await initiatePayment({
-        amountCents: amount,
-        currency: currency.toUpperCase(),
+        amountCents,
+        currency,
         merchantOrderId: paymentId,
         customer
       });
@@ -107,19 +110,20 @@ exports.createPaymobPayment = onRequest(
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      return res.status(200).json({
+      // Return redirectUrl (the iframe URL) to match client expectations
+      return {
         success: true,
         paymentId,
-        paymentToken: result.paymentToken,
-        iframeUrl: result.iframeUrl
-      });
+        redirectUrl: result.iframeUrl
+      };
 
     } catch (error) {
+      // Re-throw HttpsError as-is
+      if (error instanceof HttpsError) {
+        throw error;
+      }
       logger.error("createPaymobPayment error", { message: error.message, stack: error.stack });
-      return res.status(500).json({
-        success: false,
-        error: error.message || "Internal server error during payment creation."
-      });
+      throw new HttpsError("internal", error.message || "Internal server error during payment creation.");
     }
   }
 );
