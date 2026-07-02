@@ -289,14 +289,15 @@
 
   <!-- Main JavaScript File -->
   <script src="js/main.js"></script>
-<script type="module" src="js/firebase-site.js"></script>
-  <script type="module">
+<script type="module">
     import { db } from "./js/firebase-config.js";
     import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get("orderId");
+      // Paymob redirects back with "merchant_order_id" — that IS our Firestore payment ID.
+      // We also keep "orderId"/"paymentId" as fallbacks in case the link was built manually.
+      const orderId = urlParams.get("merchant_order_id") || urlParams.get("orderId") || urlParams.get("paymentId");
 
       const successElements = document.getElementById("success-elements");
       const statusContainer = document.getElementById("payment-status-container");
@@ -333,8 +334,8 @@
         return;
       }
 
-      // Start listening to order snapshot
-      const unsub = onSnapshot(doc(db, "orders", orderId), (snap) => {
+      // Start listening to the payment document (collection is "payments", not "orders")
+      const unsub = onSnapshot(doc(db, "payments", orderId), (snap) => {
         if (!snap.exists()) {
           statusIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>';
           statusTitle.innerHTML = `
