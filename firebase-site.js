@@ -179,7 +179,11 @@ function buildCourseHTML(c) {
           <span class="lang-en">Intro</span>
           <span class="lang-ar">مقدمة</span>
         </a>
-        <a href="thankyou.html" class="btn btn-primary">
+        <a href="#" class="btn btn-primary buy-course-btn"
+   data-course-id="${esc(c.id)}"
+   data-price="${esc(c.price || 0)}"
+   data-title-en="${esc(c.titleEn)}"
+   data-title-ar="${esc(c.titleAr)}">
           <span class="lang-en">Get Access</span>
           <span class="lang-ar">شراء الدورة</span>
         </a>
