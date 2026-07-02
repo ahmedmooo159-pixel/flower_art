@@ -2,7 +2,7 @@
 //  Payment API Configuration
 //  Update PAYMENT_API_BASE after Vercel deployment
 // ==========================================
-const PAYMENT_API_BASE = "https://antigravity-payment.vercel.app";
+const PAYMENT_API_BASE = "https://flower-art-opal.vercel.app";
 
 async function createPayment(data) {
   const response = await fetch(`${PAYMENT_API_BASE}/api/create-payment`, {
