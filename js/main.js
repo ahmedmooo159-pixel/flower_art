@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initPetals();
   initMuseumDecorations();
   if (window.initCarousel) window.initCarousel();
+
+  // Load premium 3D living art studio environment dynamically on all pages
+  const artScript = document.createElement('script');
+  artScript.src = 'js/art-studio.js';
+  document.body.appendChild(artScript);
 });
 
 /* ==========================================
