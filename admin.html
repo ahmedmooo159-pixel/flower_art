@@ -978,20 +978,6 @@
                   <div id="course-image-progress" style="height:100%; width:0%; background:var(--accent-primary,#c9748f); border-radius:4px; transition:width 0.2s;"></div>
                 </div>
               </div>
-              <div class="admin-form-row">
-  <div class="admin-form-group">
-    <label>Drive/Course Link / لينك الدرايف أو الدروس</label>
-    <input type="text" id="course-drive-link" class="admin-input" placeholder="https://drive.google.com/...">
-  </div>
-  <div class="admin-form-group">
-    <label>Channel Link / لينك القناة (اختياري)</label>
-    <input type="text" id="course-channel-link" class="admin-input" placeholder="https://t.me/... أو يوتيوب">
-  </div>
-</div>
-<div class="admin-form-group">
-  <label>File Password / باسورد الملف (اختياري)</label>
-  <input type="text" id="course-file-password" class="admin-input" placeholder="لو الملف محمي بباسورد">
-</div>
               <button type="submit" class="btn btn-primary">
                 <i class="fa-solid fa-plus"></i>
                 <span class="lang-en">Save Course</span>
@@ -1890,7 +1876,7 @@
         document.getElementById('course-cancel-btn').style.display = 'none';
         document.getElementById('course-image').value = 'assets/artwork-placeholder.jpg';
       },
-      
+
       saveCourse() {
         const id = document.getElementById('course-edit-id').value;
         const titleEn = document.getElementById('course-title-en').value.trim();
@@ -1902,9 +1888,6 @@
         const badgeEn = document.getElementById('course-badge-en').value.trim();
         const badgeAr = document.getElementById('course-badge-ar').value.trim();
         const image = document.getElementById('course-image').value.trim();
-        const driveLink = document.getElementById('course-drive-link').value.trim();
-        const channelLink = document.getElementById('course-channel-link').value.trim();
-        const filePassword = document.getElementById('course-file-password').value.trim();
 
         let courses = this.getData('courses_data', this.defaultCourses);
 
@@ -1912,7 +1895,7 @@
           // Edit Mode
           courses = courses.map(c => {
             if (c.id === parseInt(id)) {
-              return { ...c, titleEn, titleAr, levelEn, levelAr, duration, price, badgeEn, badgeAr, image, driveLink, channelLink, filePassword };
+              return { ...c, titleEn, titleAr, levelEn, levelAr, duration, price, badgeEn, badgeAr, image };
             }
             return c;
           });
@@ -1929,10 +1912,7 @@
             price,
             badgeEn,
             badgeAr,
-            image,
-            driveLink,
-            channelLink,
-            filePassword
+            image
           };
           courses.push(newCourse);
           this.showToast('Course added successfully!', 'success');
@@ -1958,9 +1938,6 @@
         document.getElementById('course-price').value = c.price;
         document.getElementById('course-badge-en').value = c.badgeEn;
         document.getElementById('course-badge-ar').value = c.badgeAr;
-        document.getElementById('course-drive-link').value = c.driveLink || '';
-        document.getElementById('course-channel-link').value = c.channelLink || '';
-        document.getElementById('course-file-password').value = c.filePassword || '';
         document.getElementById('course-image').value = c.image;
 
         document.getElementById('course-cancel-btn').style.display = 'inline-block';

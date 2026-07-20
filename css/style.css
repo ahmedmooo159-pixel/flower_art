@@ -2897,33 +2897,7 @@ body.rtl .artwork-category {
 /* ==========================================================================
    PREMIUM ART STUDIO LIVING ENVIRONMENT STYLES
    ========================================================================== */
-@media (min-width: 768px) {
-  body, a, button, input, select, textarea, .nav-link, .btn, .hamburger, .swatch, .testimonial-card, .faq-trigger {
-    cursor: none !important;
-  }
-  #cursor-ring {
-    position: fixed; top: 0; left: 0; z-index: 9999;
-    width: 40px; height: 40px; border: 2px solid rgba(167, 139, 250, .8);
-    border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
-    transition: width .25s, height .25s, border-color .25s, background .25s;
-    mix-blend-mode: multiply;
-  }
-  #cursor-dot {
-    position: fixed; top: 0; left: 0; z-index: 10000;
-    width: 8px; height: 8px; background: #fb7185;
-    border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
-  }
-  body.has-hover #cursor-ring {
-    width: 60px; height: 60px;
-    background: rgba(167, 139, 250, .15);
-    border-color: #a78bfa;
-  }
-}
-@media (max-width: 767px) {
-  #cursor-ring, #cursor-dot {
-    display: none !important;
-  }
-}
+
 
 #three-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
 #fx-canvas    { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }

@@ -2,7 +2,7 @@
 //  Payment API Configuration
 //  Update PAYMENT_API_BASE after Vercel deployment
 // ==========================================
-const PAYMENT_API_BASE = "https://flower-art-opal.vercel.app";
+const PAYMENT_API_BASE = "https://antigravity-payment.vercel.app";
 
 async function createPayment(data) {
   const response = await fetch(`${PAYMENT_API_BASE}/api/create-payment`, {
@@ -128,17 +128,35 @@ function showCheckoutModal(courseTitle, onConfirm) {
       </div>
       <div class="checkout-spinner" id="checkout-loading">
         <i class="fa-solid fa-spinner fa-spin" style="color: var(--accent-blue); font-size: 1.25rem;"></i>
-        <span class="lang-en">Redirecting to Paymob...</span>
-        <span class="lang-ar">جاري الانتقال لبوابة الدفع...</span>
+        <span id="checkout-loading-text">
+          <span class="lang-en">Redirecting to payment...</span>
+          <span class="lang-ar">جاري الانتقال لبوابة الدفع...</span>
+        </span>
       </div>
-      <div class="checkout-modal-btns" id="checkout-actions">
-        <button class="btn btn-secondary" id="checkout-cancel" style="flex: 1; padding: 0.75rem 1.5rem;">
+
+      <!-- Gateway Selection Label -->
+      <div id="checkout-gateway-label" style="margin-top: 1.25rem; margin-bottom: 0.75rem;">
+        <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+          <span class="lang-en">Choose Payment Method</span>
+          <span class="lang-ar">اختر طريقة الدفع</span>
+        </label>
+      </div>
+
+      <!-- Gateway Buttons -->
+      <div class="checkout-modal-btns" id="checkout-actions" style="flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-primary" id="checkout-pay-paymob" style="width: 100%; padding: 0.85rem 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+          <i class="fa-solid fa-credit-card"></i>
+          <span class="lang-en">Pay with Paymob</span>
+          <span class="lang-ar">الدفع عبر Paymob</span>
+        </button>
+        <button class="btn btn-primary" id="checkout-pay-kashier" style="width: 100%; padding: 0.85rem 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem; background: linear-gradient(135deg, #1a73e8, #0d47a1);">
+          <i class="fa-solid fa-wallet"></i>
+          <span class="lang-en">Pay with Kashier</span>
+          <span class="lang-ar">الدفع عبر كاشير</span>
+        </button>
+        <button class="btn btn-secondary" id="checkout-cancel" style="width: 100%; padding: 0.75rem 1.5rem;">
           <span class="lang-en">Cancel</span>
           <span class="lang-ar">إلغاء</span>
-        </button>
-        <button class="btn btn-primary" id="checkout-submit" style="flex: 1; padding: 0.75rem 1.5rem;">
-          <span class="lang-en">Continue</span>
-          <span class="lang-ar">استمرار</span>
         </button>
       </div>
     </div>
@@ -160,7 +178,9 @@ function showCheckoutModal(courseTitle, onConfirm) {
   const nameInput = overlay.querySelector("#checkout-name");
   const emailInput = overlay.querySelector("#checkout-email");
   const actions = overlay.querySelector("#checkout-actions");
+  const gatewayLabel = overlay.querySelector("#checkout-gateway-label");
   const loading = overlay.querySelector("#checkout-loading");
+  const loadingText = overlay.querySelector("#checkout-loading-text");
 
   overlay.querySelector("#checkout-cancel").onclick = () => {
     overlay.style.opacity = "0";
@@ -168,7 +188,8 @@ function showCheckoutModal(courseTitle, onConfirm) {
     setTimeout(() => overlay.remove(), 300);
   };
 
-  overlay.querySelector("#checkout-submit").onclick = async () => {
+  // Helper: handle gateway selection
+  async function handleGatewayClick(gateway) {
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
 
@@ -178,30 +199,42 @@ function showCheckoutModal(courseTitle, onConfirm) {
     }
 
     actions.style.display = "none";
+    gatewayLabel.style.display = "none";
     loading.style.display = "flex";
 
+    // Update loading text based on gateway
+    const gatewayName = gateway === "kashier" ? "Kashier / كاشير" : "Paymob";
+    loadingText.innerHTML = isRTL
+      ? `جاري الانتقال لبوابة الدفع ${gatewayName}...`
+      : `Redirecting to ${gatewayName}...`;
+
     try {
-      await onConfirm(name, email);
+      await onConfirm(name, email, gateway);
     } catch (err) {
       alert((isRTL ? "فشل بدء الدفع: " : "Failed to initiate payment: ") + err.message);
       actions.style.display = "flex";
+      gatewayLabel.style.display = "block";
       loading.style.display = "none";
     }
-  };
+  }
+
+  overlay.querySelector("#checkout-pay-paymob").onclick = () => handleGatewayClick("paymob");
+  overlay.querySelector("#checkout-pay-kashier").onclick = () => handleGatewayClick("kashier");
 }
 
 const handlePurchase = async (courseId, titleEn, titleAr, price) => {
   const isRTL = document.body.classList.contains("rtl");
   const courseTitle = isRTL ? titleAr : titleEn;
 
-  showCheckoutModal(courseTitle, async (name, email) => {
+  showCheckoutModal(courseTitle, async (name, email, gateway) => {
     const res = await createPayment({
       courseId,
       courseTitle,
       price: Number(price),
       customerEmail: email,
       customerName: name,
-      lang: isRTL ? "ar" : "en"
+      lang: isRTL ? "ar" : "en",
+      gateway
     });
 
     if (res.data && res.data.redirectUrl) {

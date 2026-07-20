@@ -1,12 +1,13 @@
 // ==========================================
 //  POST /api/create-payment
 //  Vercel Serverless Function
-//  Creates a Paymob payment session and
-//  returns the iframe redirect URL.
+//  Creates a payment session (Paymob OR Kashier)
+//  and returns the redirect URL.
 // ==========================================
 
 const { db, admin } = require("../lib/firebase");
-const { initiatePayment } = require("../lib/paymob/paymobService");
+const { initiatePayment: initiatePaymobPayment } = require("../lib/paymob/paymobService");
+const { initiatePayment: initiateKashierPayment } = require("../lib/kashier/kashierService");
 const logger = require("../lib/logger");
 
 // ---- CORS Configuration ----
@@ -42,17 +43,40 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { courseId, courseTitle, price, customerEmail, customerName, lang } = req.body;
+    const {
+      courseId,
+      courseTitle,
+      price,
+      customerEmail,
+      customerName,
+      lang,
+      gateway = "paymob" // Default to paymob if not specified
+    } = req.body;
 
     // ---- Input validation ----
     if (!price || typeof price !== "number" || price <= 0) {
-      return res.status(400).json({ success: false, error: "Invalid or missing 'price' (must be a positive number)." });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or missing 'price' (must be a positive number)."
+      });
     }
     if (!customerEmail) {
-      return res.status(400).json({ success: false, error: "Invalid or missing 'customerEmail'." });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or missing 'customerEmail'."
+      });
     }
     if (!customerName) {
-      return res.status(400).json({ success: false, error: "Invalid or missing 'customerName'." });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or missing 'customerName'."
+      });
+    }
+    if (!["paymob", "kashier"].includes(gateway)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid gateway. Must be 'paymob' or 'kashier'."
+      });
     }
 
     // Convert price (EGP) to amount in cents
@@ -71,7 +95,7 @@ module.exports = async function handler(req, res) {
       phone: ""
     };
 
-    // Create a Firestore payment document first (status: pending)
+    // Create a Firestore payment document (status: pending)
     const paymentRef = db.collection("payments").doc();
     const paymentId = paymentRef.id;
 
@@ -82,6 +106,7 @@ module.exports = async function handler(req, res) {
       amount: amountCents,
       currency,
       status: "pending",
+      gateway, // Track which gateway is being used
       customer,
       orderId: null,
       transactionId: null,
@@ -90,31 +115,55 @@ module.exports = async function handler(req, res) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    logger.info("Payment document created", { paymentId });
+    logger.info("Payment document created", { paymentId, gateway });
 
-    // Orchestrate the Paymob flow
-    const result = await initiatePayment({
-      amountCents,
-      currency,
-      merchantOrderId: paymentId,
-      customer
-    });
+    let result;
 
-    // Save the Paymob order ID back to the document
-    await paymentRef.update({
-      orderId: String(result.paymobOrderId),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    if (gateway === "kashier") {
+      // ---- KASHIER FLOW ----
+      result = await initiateKashierPayment({
+        amountCents,
+        currency,
+        merchantOrderId: paymentId,
+        customer
+      });
 
-    // Return redirectUrl (the iframe URL)
+      // Save Kashier order ID
+      await paymentRef.update({
+        orderId: String(result.kashierOrderId),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+    } else {
+      // ---- PAYMOB FLOW (default) ----
+      result = await initiatePaymobPayment({
+        amountCents,
+        currency,
+        merchantOrderId: paymentId,
+        customer
+      });
+
+      // Save Paymob order ID
+      await paymentRef.update({
+        orderId: String(result.paymobOrderId),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    // Return redirectUrl (the iframe/redirect URL)
+    // Paymob returns iframeUrl, Kashier returns redirectUrl
     return res.status(200).json({
       success: true,
       paymentId,
-      redirectUrl: result.iframeUrl
+      gateway,
+      redirectUrl: result.redirectUrl || result.iframeUrl
     });
 
   } catch (error) {
-    logger.error("create-payment error", { message: error.message, stack: error.stack });
+    logger.error("create-payment error", {
+      message: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       success: false,
       error: error.message || "Internal server error during payment creation."

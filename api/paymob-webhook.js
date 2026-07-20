@@ -9,49 +9,6 @@ const { db, admin } = require("../lib/firebase");
 const { verifyHmac } = require("../lib/paymob/webhook");
 const config = require("../lib/config");
 const logger = require("../lib/logger");
-const { sendCourseAccessEmail } = require("../lib/email");
-
-// ── Sends the course-access email once a payment is confirmed as "paid" ──
-async function sendPaymentConfirmationEmail(paymentData) {
-  try {
-    const { courseId, courseTitle, customer, lang } = paymentData || {};
-    if (!customer?.email) {
-      logger.warn("No customer email on payment document — skipping email");
-      return;
-    }
-
-    let driveLink = null, channelLink = null, filePassword = null;
-
-    if (courseId) {
-      const courseSnap = await db.collection("courses").doc(String(courseId)).get();
-      if (courseSnap.exists) {
-        const c = courseSnap.data();
-        driveLink = c.driveLink || null;
-        channelLink = c.channelLink || null;
-        filePassword = c.filePassword || null;
-      }
-    }
-
-    let telegramFallback = null;
-    if (!driveLink && !channelLink && !filePassword) {
-      const settingsSnap = await db.collection("settings").doc("main").get();
-      if (settingsSnap.exists) telegramFallback = settingsSnap.data().telegram || null;
-    }
-
-    await sendCourseAccessEmail({
-      toEmail: customer.email,
-      customerName: customer.first_name || "there",
-      courseTitle: courseTitle || "your course",
-      driveLink,
-      channelLink,
-      filePassword,
-      telegramFallback,
-      lang: lang || "en"
-    });
-  } catch (err) {
-    logger.error("sendPaymentConfirmationEmail failed", { message: err.message });
-  }
-}
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST" && req.method !== "GET") {
@@ -128,9 +85,6 @@ module.exports = async function handler(req, res) {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
           });
           logger.info("Payment updated via merchantOrderId", { merchantOrderId, status });
-          if (status === "paid") {
-            await sendPaymentConfirmationEmail(docSnap.data());
-          }
           return res.status(200).send("OK");
         }
       }
@@ -154,9 +108,6 @@ module.exports = async function handler(req, res) {
     });
 
     logger.info("Payment updated via orderId", { paymentId: paymentDoc.id, status });
-    if (status === "paid") {
-      await sendPaymentConfirmationEmail(paymentDoc.data());
-    }
     return res.status(200).send("OK");
 
   } catch (error) {

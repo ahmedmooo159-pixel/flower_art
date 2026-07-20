@@ -1,18 +1,6 @@
 (function() {
   // 1. Inject canvas elements and helper HTML structures into the DOM
   function injectHTML() {
-    // Custom cursor elements
-    if (!document.getElementById('cursor-ring')) {
-      const ring = document.createElement('div');
-      ring.id = 'cursor-ring';
-      document.body.appendChild(ring);
-    }
-    if (!document.getElementById('cursor-dot')) {
-      const dot = document.createElement('div');
-      dot.id = 'cursor-dot';
-      document.body.appendChild(dot);
-    }
-
     // Canvas overlay and layers
     const layers = [
       { id: 'three-canvas', tag: 'canvas' },
@@ -76,43 +64,6 @@
   // 3. Initialize background blobs, splashes, cursor and interactive ripples
   function initLivingEnvironment() {
     injectHTML();
-
-    // Cursor tracking
-    const ring = document.getElementById('cursor-ring');
-    const dot = document.getElementById('cursor-dot');
-    let mx = window.innerWidth / 2, my = window.innerHeight / 2;
-    let rx = mx, ry = my;
-
-    document.addEventListener('mousemove', e => {
-      mx = e.clientX; my = e.clientY;
-      if (dot) {
-        dot.style.left = mx + 'px';
-        dot.style.top = my + 'px';
-      }
-    });
-
-    // Custom cursor scaling on hoverable elements
-    const hoverQuery = 'a, button, select, input, textarea, .nav-link, .btn, .hamburger, .swatch, .testimonial-card, .faq-trigger, [role="button"]';
-    document.addEventListener('mouseover', e => {
-      if (e.target.closest && e.target.closest(hoverQuery)) {
-        document.body.classList.add('has-hover');
-      }
-    });
-    document.addEventListener('mouseout', e => {
-      if (e.target.closest && !e.target.closest(hoverQuery)) {
-        document.body.classList.remove('has-hover');
-      }
-    });
-
-    (function loopCursor() {
-      rx += (mx - rx) * 0.12;
-      ry += (my - ry) * 0.12;
-      if (ring) {
-        ring.style.left = rx + 'px';
-        ring.style.top = ry + 'px';
-      }
-      requestAnimationFrame(loopCursor);
-    })();
 
     // Watercolor blobs
     const wbg = document.getElementById('watercolor-bg');

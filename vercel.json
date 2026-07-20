@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/create-payment",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/api/create-payment.js"
+    },
+    {
+      "src": "/api/paymob-webhook",
+      "methods": ["POST", "GET"],
+      "dest": "/api/paymob-webhook.js"
+    },
+    {
+      "src": "/api/kashier-webhook",
+      "methods": ["POST", "GET"],
+      "dest": "/api/kashier-webhook.js"
+    }
+  ]
+}
