@@ -3,6 +3,7 @@
 //  Vercel Serverless Function
 //  Creates a payment session (Paymob OR Kashier)
 //  and returns the redirect URL.
+//  ✅ FIXED VERSION - Properly saves orderId
 // ==========================================
 
 const { db, admin } = require("../lib/firebase");
@@ -50,14 +51,14 @@ module.exports = async function handler(req, res) {
       customerEmail,
       customerName,
       lang,
-      gateway = "paymob" // Default to paymob if not specified
+      gateway = "paymob"
     } = req.body;
 
     // ---- Input validation ----
     if (!price || typeof price !== "number" || price <= 0) {
       return res.status(400).json({
         success: false,
-        error: "Invalid or missing 'price' (must be a positive number)."
+        error: "Invalid or missing 'price'."
       });
     }
     if (!customerEmail) {
@@ -79,11 +80,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Convert price (EGP) to amount in cents
     const amountCents = Math.round(price * 100);
     const currency = "EGP";
 
-    // Parse customer name into first/last
     const nameParts = customerName.trim().split(/\s+/);
     const firstName = nameParts[0] || "Customer";
     const lastName = nameParts.slice(1).join(" ") || "Customer";
@@ -95,9 +94,11 @@ module.exports = async function handler(req, res) {
       phone: ""
     };
 
-    // Create a Firestore payment document (status: pending)
+    // Create payment document
     const paymentRef = db.collection("payments").doc();
     const paymentId = paymentRef.id;
+
+    console.log(`[CREATE-PAYMENT] Creating payment doc: ${paymentId}, gateway: ${gateway}`);
 
     await paymentRef.set({
       paymentId,
@@ -106,7 +107,7 @@ module.exports = async function handler(req, res) {
       amount: amountCents,
       currency,
       status: "pending",
-      gateway, // Track which gateway is being used
+      gateway,
       customer,
       orderId: null,
       transactionId: null,
@@ -118,9 +119,12 @@ module.exports = async function handler(req, res) {
     logger.info("Payment document created", { paymentId, gateway });
 
     let result;
+    let orderId;
 
     if (gateway === "kashier") {
       // ---- KASHIER FLOW ----
+      console.log(`[KASHIER] Initiating payment for ${paymentId}`);
+      
       result = await initiateKashierPayment({
         amountCents,
         currency,
@@ -128,14 +132,15 @@ module.exports = async function handler(req, res) {
         customer
       });
 
-      // Save Kashier order ID
-      await paymentRef.update({
-        orderId: String(result.kashierOrderId),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      // Extract orderId from Kashier response
+      orderId = result.kashierOrderId || result.orderId || paymentId;
+      
+      console.log(`[KASHIER] Payment initiated, orderId: ${orderId}`);
 
     } else {
       // ---- PAYMOB FLOW (default) ----
+      console.log(`[PAYMOB] Initiating payment for ${paymentId}`);
+      
       result = await initiatePaymobPayment({
         amountCents,
         currency,
@@ -143,30 +148,53 @@ module.exports = async function handler(req, res) {
         customer
       });
 
-      // Save Paymob order ID
-      await paymentRef.update({
-        orderId: String(result.paymobOrderId),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      orderId = result.paymobOrderId || paymentId;
+      
+      console.log(`[PAYMOB] Payment initiated, orderId: ${orderId}`);
     }
 
-    // Return redirectUrl (the iframe/redirect URL)
-    // Paymob returns iframeUrl, Kashier returns redirectUrl
+    // ✅ CRITICAL: Save orderId to Firebase BEFORE returning
+    if (orderId) {
+      await paymentRef.update({
+        orderId: String(orderId),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      console.log(`[SUCCESS] orderId saved to Firebase: ${orderId}`);
+      logger.info("orderId saved to Firebase", { paymentId, orderId, gateway });
+    } else {
+      console.log(`[ERROR] orderId is empty!`);
+      logger.error("orderId is empty after gateway response", { paymentId, gateway });
+      throw new Error("Gateway did not return a valid order ID");
+    }
+
+    // Validate redirectUrl
+    if (!result.redirectUrl && !result.iframeUrl) {
+      console.log(`[ERROR] No redirect URL from gateway`);
+      throw new Error("Payment gateway returned no redirect URL");
+    }
+
+    const redirectUrl = result.redirectUrl || result.iframeUrl;
+
+    console.log(`[FINAL] Returning success response - paymentId: ${paymentId}, gateway: ${gateway}`);
+
     return res.status(200).json({
       success: true,
       paymentId,
+      orderId,
       gateway,
-      redirectUrl: result.redirectUrl || result.iframeUrl
+      redirectUrl
     });
 
   } catch (error) {
+    console.error(`[ERROR] create-payment error:`, error.message);
     logger.error("create-payment error", {
       message: error.message,
       stack: error.stack
     });
     return res.status(500).json({
       success: false,
-      error: error.message || "Internal server error during payment creation."
+      error: error.message || "Internal server error"
     });
   }
 };
