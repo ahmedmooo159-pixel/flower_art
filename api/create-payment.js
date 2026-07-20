@@ -12,6 +12,26 @@ const { initiatePayment: initiateKashierPayment } = require("../lib/kashier/kash
 const logger = require("../lib/logger");
 
 // ---- CORS Configuration ----
+// const ALLOWED_ORIGINS = [
+//   "https://ahmedmooo159-pixel.github.io",
+//   "https://flower-5f122.web.app",
+//   "https://flower-5f122.firebaseapp.com",
+//   "http://localhost:5000",
+//   "http://localhost:5500",
+//   "http://127.0.0.1:5500",
+//   "http://127.0.0.1:5000"
+// ];
+
+// function setCorsHeaders(req, res) {
+//   const origin = req.headers.origin || "";
+//   if (ALLOWED_ORIGINS.includes(origin)) {
+//     res.setHeader("Access-Control-Allow-Origin", origin);
+//   }
+//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//   res.setHeader("Access-Control-Max-Age", "3600");
+// }
+
 const ALLOWED_ORIGINS = [
   "https://ahmedmooo159-pixel.github.io",
   "https://flower-5f122.web.app",
@@ -22,16 +42,21 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:5000"
 ];
 
+// ✅ يسمح بأي preview/production URL تابع لمشروعك على Vercel
+// (flower-art-opal.vercel.app, flower-cp0l6u7n6-ahmed-mourad.vercel.app, إلخ)
+const VERCEL_PROJECT_PATTERN = /^https:\/\/flower(-[a-z0-9]+)?(-ahmed-mourad)?\.vercel\.app$/;
+
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin || "";
-  if (ALLOWED_ORIGINS.includes(origin)) {
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) || VERCEL_PROJECT_PATTERN.test(origin);
+
+  if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Max-Age", "3600");
 }
-
 module.exports = async function handler(req, res) {
   // Handle CORS preflight
   setCorsHeaders(req, res);
