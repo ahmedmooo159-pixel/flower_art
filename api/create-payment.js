@@ -48,6 +48,19 @@ const VERCEL_PROJECT_PATTERN = /^https:\/\/flower(-[a-z0-9]+)?(-ahmed-mourad)?\.
 
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin || "";
+
+  const ALLOWED_ORIGINS = [
+    "https://ahmedmooo159-pixel.github.io",
+    "https://flower-5f122.web.app",
+    "https://flower-5f122.firebaseapp.com",
+    "http://localhost:5000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:5000"
+  ];
+
+  const VERCEL_PROJECT_PATTERN = /^https:\/\/flower(-[a-z0-9-]+)?\.vercel\.app$/;
+
   const isAllowed = ALLOWED_ORIGINS.includes(origin) || VERCEL_PROJECT_PATTERN.test(origin);
 
   if (isAllowed) {
