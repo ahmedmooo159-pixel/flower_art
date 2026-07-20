@@ -338,7 +338,7 @@
       }
 
       // Start listening to order snapshot
-      const unsub = onSnapshot(doc(db, "orders", orderId), (snap) => {
+      onSnapshot(doc(db, "payments", orderId), (snap) => {
         if (!snap.exists()) {
           statusIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>';
           statusTitle.innerHTML = `
