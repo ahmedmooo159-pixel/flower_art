@@ -295,8 +295,12 @@
     import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     document.addEventListener("DOMContentLoaded", () => {
+      // const urlParams = new URLSearchParams(window.location.search);
+      // const orderId = urlParams.get("orderId");
       const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get("orderId");
+      const orderId = urlParams.get("orderId") 
+      || urlParams.get("merchant_order_id") 
+      || urlParams.get("order");
 
       const successElements = document.getElementById("success-elements");
       const statusContainer = document.getElementById("payment-status-container");
