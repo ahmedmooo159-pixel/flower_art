@@ -134,7 +134,59 @@ function listenPayments() {
 //  COURSES — Realtime listener
 //  (was getDocs, now onSnapshot — CRITICAL FIX)
 // ==========================================
-function buildCourseHTML(c) {
+// function buildCourseHTML(c) {
+//   return `
+//     <div class="glass-card">
+//       <div class="course-image">
+//         <span class="course-badge">
+//           <span class="lang-en">${esc(c.badgeEn || c.levelEn)}</span>
+//           <span class="lang-ar">${esc(c.badgeAr || c.levelAr)}</span>
+//         </span>
+//         <img src="${esc(c.image || "assets/artwork-placeholder.jpg")}"
+//              alt="${esc(c.titleEn)}"
+//              loading="lazy"
+//              onerror="this.src='assets/artwork-placeholder.jpg'">
+//       </div>
+//       <div class="course-content">
+//         <div class="course-meta">
+//           <span><i class="fa-solid fa-clock"></i> ${esc(c.duration)}</span>
+//           <span><i class="fa-solid fa-layer-group"></i>
+//             <span class="lang-en">${esc(c.levelEn)}</span>
+//             <span class="lang-ar">${esc(c.levelAr)}</span>
+//           </span>
+//         </div>
+//         <h3 class="course-title">
+//           <span class="lang-en">${esc(c.titleEn)}</span>
+//           <span class="lang-ar">${esc(c.titleAr)}</span>
+//         </h3>
+//         <p class="course-desc">
+//           <span class="lang-en">${esc(c.descEn)}</span>
+//           <span class="lang-ar">${esc(c.descAr)}</span>
+//         </p>
+//         <div class="course-pricing">
+//           <div>
+//             <div class="price-label">
+//               <span class="lang-en">Price</span>
+//               <span class="lang-ar">السعر</span>
+//             </div>
+//             <div class="price-value">$${esc(c.price || 0)}<span>.00</span></div>
+//           </div>
+//         </div>
+//       </div>
+//       <div class="course-actions">
+//         <a href="${esc(c.introUrl || "https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz")}"
+//            target="_blank" class="btn btn-secondary">
+//           <span class="lang-en">Intro</span>
+//           <span class="lang-ar">مقدمة</span>
+//         </a>
+//         <a href="thankyou.html" class="btn btn-primary">
+//           <span class="lang-en">Get Access</span>
+//           <span class="lang-ar">شراء الدورة</span>
+//         </a>
+//       </div>
+//     </div>`;
+// }
+function buildCourseHTML(c, id) {
   return `
     <div class="glass-card">
       <div class="course-image">
@@ -179,13 +231,49 @@ function buildCourseHTML(c) {
           <span class="lang-en">Intro</span>
           <span class="lang-ar">مقدمة</span>
         </a>
-        <a href="thankyou.html" class="btn btn-primary">
+        <a href="#" class="btn btn-primary buy-course-btn"
+           data-course-id="${esc(id)}"
+           data-price="${esc(c.price || 0)}"
+           data-title-en="${esc(c.titleEn)}"
+           data-title-ar="${esc(c.titleAr)}">
           <span class="lang-en">Get Access</span>
           <span class="lang-ar">شراء الدورة</span>
         </a>
       </div>
     </div>`;
 }
+// function listenCourses() {
+//   const grids = document.querySelectorAll(".courses-grid");
+//   if (!grids.length) return;
+
+//   const unsub = onSnapshot(
+//     collection(db, "courses"),
+//     snap => {
+//       if (snap.empty) return; // keep static HTML fallback
+
+//       const courses = snap.docs.map(d => clean(d.data()));
+
+//       grids.forEach(grid => {
+//         grid.innerHTML = "";
+//         courses.forEach(c => {
+//           const el = document.createElement("article");
+//           el.className = "course-card fade-up visible";
+//           el.setAttribute("data-category", (c.levelEn || "basics").toLowerCase());
+//           el.innerHTML = buildCourseHTML(c);
+//           grid.appendChild(el);
+//         });
+//         applyLang();
+//       });
+//     },
+//     err => console.warn("[courses listener]", err.message)
+//   );
+//   registerListener(unsub);
+// }
+
+// ==========================================
+//  REVIEWS — Realtime listener
+//  (was getDocs, now onSnapshot — CRITICAL FIX)
+// ==========================================
 
 function listenCourses() {
   const grids = document.querySelectorAll(".courses-grid");
@@ -196,7 +284,8 @@ function listenCourses() {
     snap => {
       if (snap.empty) return; // keep static HTML fallback
 
-      const courses = snap.docs.map(d => clean(d.data()));
+      // ✅ FIX: keep the doc id alongside the data
+      const courses = snap.docs.map(d => ({ id: d.id, ...clean(d.data()) }));
 
       grids.forEach(grid => {
         grid.innerHTML = "";
@@ -204,7 +293,7 @@ function listenCourses() {
           const el = document.createElement("article");
           el.className = "course-card fade-up visible";
           el.setAttribute("data-category", (c.levelEn || "basics").toLowerCase());
-          el.innerHTML = buildCourseHTML(c);
+          el.innerHTML = buildCourseHTML(c, c.id); // ✅ pass id
           grid.appendChild(el);
         });
         applyLang();
@@ -215,10 +304,6 @@ function listenCourses() {
   registerListener(unsub);
 }
 
-// ==========================================
-//  REVIEWS — Realtime listener
-//  (was getDocs, now onSnapshot — CRITICAL FIX)
-// ==========================================
 function listenReviews() {
   const grid = document.querySelector(".testimonials-grid");
   if (!grid) return;
