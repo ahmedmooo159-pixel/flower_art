@@ -1,26 +1,22 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/create-payment",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/create-payment.js"
+      "source": "/api/create-payment",
+      "destination": "/api/create-payment.js"
     },
     {
-      "src": "/api/paymob-webhook",
-      "methods": ["POST", "GET"],
-      "dest": "/api/paymob-webhook.js"
+      "source": "/api/paymob-webhook",
+      "destination": "/api/paymob-webhook.js"
     },
     {
-      "src": "/api/kashier-webhook",
-      "methods": ["POST", "GET"],
-      "dest": "/api/kashier-webhook.js"
+      "source": "/api/kashier-webhook",
+      "destination": "/api/kashier-webhook.js"
     }
   ]
 }
