@@ -1,8 +1,22 @@
 {
+  "version": 2,
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node"
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/create-payment",
+      "destination": "/api/create-payment.js"
+    },
+    {
+      "source": "/api/paymob-webhook",
+      "destination": "/api/paymob-webhook.js"
+    },
+    {
+      "source": "/api/kashier-webhook",
+      "destination": "/api/kashier-webhook.js"
     }
   ]
 }
