@@ -978,6 +978,48 @@
                   <div id="course-image-progress" style="height:100%; width:0%; background:var(--accent-primary,#c9748f); border-radius:4px; transition:width 0.2s;"></div>
                 </div>
               </div>
+
+              <!-- Course Videos Section -->
+              <div class="admin-form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--border-muted); padding-top: 1.5rem;">
+                <label style="font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 1rem;">
+                  <span class="lang-en">Course Lessons / Videos</span>
+                  <span class="lang-ar">دروس وفيديوهات الكورس</span>
+                </label>
+                
+                <!-- Add Lesson Inline Form -->
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                  <div class="admin-form-row" style="margin-bottom: 0.5rem; display: flex; gap: 1rem;">
+                    <div class="admin-form-group" style="flex: 2;">
+                      <label style="font-size: 0.85rem;">Lesson Title / عنوان الدرس</label>
+                      <input type="text" id="lesson-title-input" class="admin-input" placeholder="e.g. Lesson 1: Introduction">
+                    </div>
+                    <div class="admin-form-group" style="flex: 1;">
+                      <label style="font-size: 0.85rem;">Order / الترتيب</label>
+                      <input type="number" id="lesson-order-input" class="admin-input" value="1">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="lesson-video-file" accept="video/mp4,video/*" style="display: none;">
+                    <button type="button" id="lesson-video-upload-btn" class="btn btn-secondary" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                      <i class="fa-solid fa-file-video"></i> Select & Upload Video
+                    </button>
+                    <span id="lesson-video-filename" style="font-size: 0.85rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                  </div>
+                  
+                  <!-- Video Upload Progress Bar -->
+                  <div id="lesson-video-progress-wrap" style="display: none; margin-top: 10px; background: #eee; height: 16px; border-radius: 8px; overflow: hidden; position: relative;">
+                    <div id="lesson-video-progress" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.1s ease;"></div>
+                    <span id="lesson-video-progress-text" style="position: absolute; width: 100%; text-align: center; font-size: 0.75rem; color: #000; font-weight: bold; top: 0; left: 0; line-height: 16px;">0%</span>
+                  </div>
+                </div>
+
+                <!-- Lessons List -->
+                <div id="lessons-list-container" style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 0.5rem;">
+                  <p id="no-lessons-text" style="text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; margin: 0;">No lessons uploaded yet.</p>
+                  <ul id="lessons-list-ul" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+                </div>
+              </div>
+
               <button type="submit" class="btn btn-primary">
                 <i class="fa-solid fa-plus"></i>
                 <span class="lang-en">Save Course</span>
