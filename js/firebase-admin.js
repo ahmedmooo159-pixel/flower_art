@@ -213,22 +213,205 @@ window.addEventListener("DOMContentLoaded", async () => {
   };
 
   // ==========================================
+  //  COURSE VIDEO UPLOAD & LESSONS MANAGEMENT
+  // ==========================================
+  let currentCourseLessons = [];
+  window.newCourseId = null;
+
+  // Helper to render lessons list
+  function renderLessonsList() {
+    const listUl = document.getElementById("lessons-list-ul");
+    const noLessonsText = document.getElementById("no-lessons-text");
+    if (!listUl) return;
+
+    listUl.innerHTML = "";
+    
+    // Sort lessons by order ascending
+    currentCourseLessons.sort((a, b) => Number(a.order) - Number(b.order));
+
+    if (currentCourseLessons.length === 0) {
+      if (noLessonsText) noLessonsText.style.display = "block";
+    } else {
+      if (noLessonsText) noLessonsText.style.display = "none";
+      currentCourseLessons.forEach((lesson, index) => {
+        const li = document.createElement("li");
+        li.style.display = "flex";
+        li.style.justifyContent = "space-between";
+        li.style.alignItems = "center";
+        li.style.background = "rgba(255,255,255,0.08)";
+        li.style.padding = "0.5rem 0.75rem";
+        li.style.borderRadius = "6px";
+        li.style.fontSize = "0.9rem";
+        li.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0;">
+            <span style="background: var(--accent-primary,#c9748f); color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; font-weight: bold;">
+              #${lesson.order}
+            </span>
+            <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; flex: 1;">
+              ${lesson.title}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="${lesson.videoUrl}" target="_blank" class="btn btn-secondary btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+              <i class="fa-solid fa-play"></i> Play
+            </a>
+            <button type="button" class="btn btn-primary btn-small btn-danger delete-lesson-btn" data-index="${index}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        listUl.appendChild(li);
+      });
+
+      // Bind delete button
+      listUl.querySelectorAll(".delete-lesson-btn").forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-index"));
+          currentCourseLessons.splice(idx, 1);
+          renderLessonsList();
+        };
+      });
+    }
+  }
+
+  // Setup video upload listeners
+  const videoFile = document.getElementById("lesson-video-file");
+  const videoUploadBtn = document.getElementById("lesson-video-upload-btn");
+  const videoFilenameSpan = document.getElementById("lesson-video-filename");
+  const videoProgressWrap = document.getElementById("lesson-video-progress-wrap");
+  const videoProgress = document.getElementById("lesson-video-progress");
+  const videoProgressText = document.getElementById("lesson-video-progress-text");
+
+  if (videoUploadBtn && videoFile) {
+    videoUploadBtn.onclick = () => videoFile.click();
+
+    videoFile.onchange = async () => {
+      const file = videoFile.files[0];
+      if (!file) return;
+
+      const titleInput = document.getElementById("lesson-title-input");
+      const orderInput = document.getElementById("lesson-order-input");
+      const lessonTitle = titleInput.value.trim() || file.name.substring(0, file.name.lastIndexOf('.')) || "Untitled Lesson";
+      const lessonOrder = parseInt(orderInput.value) || 1;
+
+      // 500MB warning
+      if (file.size > 500 * 1024 * 1024) {
+        const proceed = confirm("Warning: This video is larger than 500MB. Uploading it might take a long time and use a significant amount of your Firebase Storage free-tier space. Do you want to proceed?");
+        if (!proceed) {
+          videoFile.value = "";
+          return;
+        }
+      }
+
+      // Determine courseId
+      const editId = document.getElementById("course-edit-id").value;
+      if (!editId && !window.newCourseId) {
+        window.newCourseId = Date.now(); // Numeric ID
+      }
+      const courseId = editId || window.newCourseId;
+
+      videoUploadBtn.disabled = true;
+      videoUploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+      videoFilenameSpan.textContent = file.name;
+      if (videoProgressWrap) videoProgressWrap.style.display = "block";
+
+      // Safe filename
+      const safeName = file.name
+        .replace(/[^a-zA-Z0-9.-]/g, "_")
+        .replace(/__+/g, "_");
+
+      try {
+        const fileRef = ref(storage, `videos/${courseId}/${safeName}`);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        uploadTask.on("state_changed",
+          (snapshot) => {
+            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            if (videoProgress) videoProgress.style.width = pct + "%";
+            if (videoProgressText) videoProgressText.textContent = pct + "%";
+          },
+          (error) => {
+            console.error("Video upload error:", error);
+            toast("❌ Video upload failed: " + error.message, "error");
+            resetProgress();
+          },
+          async () => {
+            try {
+              const videoUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              currentCourseLessons.push({
+                title: lessonTitle,
+                videoUrl,
+                order: lessonOrder
+              });
+              renderLessonsList();
+              toast("✅ Lesson video uploaded successfully", "success");
+              titleInput.value = "";
+              orderInput.value = currentCourseLessons.length + 1;
+            } catch (err) {
+              console.error("Get download URL error:", err);
+              toast("❌ Failed to get video URL", "error");
+            } finally {
+              resetProgress();
+            }
+          }
+        );
+      } catch (err) {
+        console.error("Upload initialization error:", err);
+        toast("❌ Upload initialization failed", "error");
+        resetProgress();
+      }
+    };
+  }
+
+  function resetProgress() {
+    if (videoUploadBtn) {
+      videoUploadBtn.disabled = false;
+      videoUploadBtn.innerHTML = '<i class="fa-solid fa-file-video"></i> Select & Upload Video';
+    }
+    if (videoFile) videoFile.value = "";
+    if (videoFilenameSpan) videoFilenameSpan.textContent = "";
+    if (videoProgressWrap) videoProgressWrap.style.display = "none";
+    if (videoProgress) videoProgress.style.width = "0%";
+    if (videoProgressText) videoProgressText.textContent = "0%";
+  }
+
+  // ==========================================
   //  COURSE — save
   // ==========================================
   const _saveCourse = A.saveCourse.bind(A);
   A.saveCourse = async function () {
-    _saveCourse();
-    const courses = A.getData("courses_data", A.defaultCourses);
-
     const editId = document.getElementById("course-edit-id").value;
-    const target = editId
-      ? courses.find(c => String(c.id) === String(editId))
+    const isNew = !editId;
+
+    // Override Date.now() if we have a pre-generated newCourseId
+    const originalDateNow = Date.now;
+    if (isNew && window.newCourseId) {
+      Date.now = () => window.newCourseId;
+    }
+
+    _saveCourse();
+
+    // Restore original Date.now
+    Date.now = originalDateNow;
+
+    const courses = A.getData("courses_data", A.defaultCourses);
+    const resolvedId = editId || (window.newCourseId ? String(window.newCourseId) : null);
+    
+    // Find the saved course target
+    const target = resolvedId 
+      ? courses.find(c => String(c.id) === String(resolvedId))
       : courses[courses.length - 1];
 
     if (target) {
+      target.lessons = currentCourseLessons;
+      A.setData("courses_data", courses);
       const ok = await saveDoc(C.COURSES, target.id, target);
       toast(ok ? "✅ تم حفظ الكورس على Firebase" : "❌ فشل حفظ الكورس", ok ? "success" : "error");
     }
+
+    window.newCourseId = null;
+    currentCourseLessons = [];
+    renderLessonsList();
   };
 
   // COURSE — delete
@@ -237,6 +420,27 @@ window.addEventListener("DOMContentLoaded", async () => {
     _deleteCourse(id);
     const ok = await delDoc(C.COURSES, id);
     toast(ok ? "✅ تم حذف الكورس من Firebase" : "❌ فشل الحذف", ok ? "success" : "error");
+  };
+
+  // Hook resetCourseForm & editCourse to manage lessons list state
+  const _resetCourseForm = A.resetCourseForm.bind(A);
+  A.resetCourseForm = function () {
+    _resetCourseForm();
+    window.newCourseId = null;
+    currentCourseLessons = [];
+    renderLessonsList();
+    resetProgress();
+  };
+
+  const _editCourse = A.editCourse.bind(A);
+  A.editCourse = function (id) {
+    _editCourse(id);
+    const courses = A.getData("courses_data", A.defaultCourses);
+    const c = courses.find(item => item.id === id);
+    if (c) {
+      currentCourseLessons = c.lessons || [];
+      renderLessonsList();
+    }
   };
 
   // ==========================================
