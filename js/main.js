@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollParallax();
   initPetals();
   initMuseumDecorations();
+  initAdminNavLink();
   if (window.initCarousel) window.initCarousel();
 
   // Lazy load premium 3D living art studio environment ONLY on desktop and after page load
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(artScript);
   }
 });
+
 
 /* ==========================================
    PERSISTENT LANGUAGE SYSTEM
@@ -70,6 +72,29 @@ function setLanguage(lang) {
     html.setAttribute('dir', 'ltr');
     html.setAttribute('lang', 'en');
   }
+}
+
+/* ==========================================
+   ADMIN NAV LINK — Show when logged in
+   ========================================== */
+function initAdminNavLink() {
+  const adminLink = document.getElementById('admin-nav-link');
+  if (!adminLink) return;
+
+  // Use dynamic import of Firebase Auth to check login state
+  Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
+  ]).then(([{ getAuth, onAuthStateChanged }]) => {
+    // firebase-config exports the app instance
+    import('./firebase-config.js').catch(() =>
+      import('../js/firebase-config.js')
+    ).then(({ app }) => {
+      const auth = getAuth(app);
+      onAuthStateChanged(auth, (user) => {
+        adminLink.style.display = user ? 'inline-flex' : 'none';
+      });
+    }).catch(() => {});
+  }).catch(() => {});
 }
 
 /* ==========================================

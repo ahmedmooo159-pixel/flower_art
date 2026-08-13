@@ -1,44 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+/* Font imports handled in <link> tags for performance */
 
 /* ==========================================
-   DESIGN VARIABLES
+   DESIGN VARIABLES — Premium 2025 Edition
    ========================================== */
 :root {
-  /* Fonts */
-  --font-heading-en: 'Playfair Display', serif;
-  --font-body-en: 'Inter', sans-serif;
+  /* Premium Font Stack */
+  --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-heading-en: 'Cormorant Garamond', Georgia, serif;
+  --font-body-en: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading-ar: 'Cairo', sans-serif;
   --font-body-ar: 'Cairo', sans-serif;
 
-  /* Color Palette */
-  --bg-primary: #FDF6F0;
-  --bg-secondary: #FAF0E8;
-  --bg-card: rgba(255, 245, 238, 0.75);
-  --border-glow: rgba(212, 165, 165, 0.25);
-  --border-muted: rgba(180, 140, 130, 0.2);
+  /* Refined Color Palette */
+  --bg-primary: #FEF8F3;
+  --bg-secondary: #FAF1E8;
+  --bg-card: rgba(255, 250, 245, 0.82);
+  --border-glow: rgba(201, 116, 143, 0.22);
+  --border-muted: rgba(180, 140, 130, 0.18);
 
-  --accent-blue: #C9748F;
-  --accent-purple: #A0522D;
-  --accent-purple-glow: rgba(160, 82, 45, 0.3);
-  --accent-blue-glow: rgba(201, 116, 143, 0.3);
+  /* Brand Colors */
+  --rose:   #C9748F;
+  --sienna: #A0522D;
+  --blush:  #D4A5A5;
+  --gold:   #C8965A;
 
-  --text-primary: #2C1810;
-  --text-secondary: #6B4C3B;
-  --text-muted: #9E7B6B;
+  /* Aliases for backwards compat */
+  --accent-blue: var(--rose);
+  --accent-purple: var(--sienna);
+  --accent-purple-glow: rgba(160, 82, 45, 0.28);
+  --accent-blue-glow:   rgba(201, 116, 143, 0.28);
 
-  /* Gradation & Glows */
-  --gradient-primary: linear-gradient(135deg, #D4A5A5 0%, #C9748F 50%, #A0522D 100%);
-  --gradient-dark: linear-gradient(180deg, #FDF6F0 0%, #FAF0E8 100%);
-  --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 245, 238, 0.3) 100%);
+  --text-primary:   #1E0F08;
+  --text-secondary: #5C3D2E;
+  --text-muted:     #9A7865;
 
-  /* UI Utilities */
-  --shadow-neon: 0 0 20px rgba(201, 116, 143, 0.25);
-  --shadow-neon-blue: 0 0 20px rgba(212, 165, 165, 0.3);
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: all 0.15s ease;
-  --border-radius-sm: 8px;
-  --border-radius-md: 16px;
-  --border-radius-lg: 24px;
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #E8B4B8 0%, #C9748F 45%, #A0522D 100%);
+  --gradient-gold:    linear-gradient(135deg, #E8C97E 0%, #C8965A 100%);
+  --gradient-dark:    linear-gradient(160deg, #FEF8F3 0%, #FAF1E8 100%);
+  --gradient-card:    linear-gradient(145deg, rgba(255,255,255,0.7) 0%, rgba(255,245,238,0.35) 100%);
+
+  /* Shadows & Glows */
+  --shadow-neon:      0 0 24px rgba(201, 116, 143, 0.22), 0 4px 20px rgba(44,24,16,0.08);
+  --shadow-neon-blue: 0 0 24px rgba(212, 165, 165, 0.28);
+  --shadow-card:      0 8px 32px rgba(44, 24, 16, 0.1), 0 1px 3px rgba(44,24,16,0.06);
+  --shadow-hover:     0 20px 50px rgba(201, 116, 143, 0.18), 0 8px 20px rgba(44,24,16,0.12);
+
+  /* Motion */
+  --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast:   all 0.18s ease;
+  --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Shape */
+  --border-radius-sm: 10px;
+  --border-radius-md: 18px;
+  --border-radius-lg: 28px;
+  --border-radius-xl: 40px;
 }
 
 /* ==========================================
@@ -59,6 +76,8 @@ html {
   color: var(--text-primary);
   font-family: var(--font-body-en);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -66,7 +85,7 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--gradient-dark);
-  background-attachment: fixed;
+  /* Removed background-attachment:fixed — kills perf on mobile */
   overflow-x: hidden;
 }
 
@@ -3201,4 +3220,197 @@ body.rtl .artwork-category {
   .float-badge-top { right: 10px; }
   .float-badge-bottom { left: 10px; }
   .hero-art { padding-top: 100px; }
-}
+  /* Mobile: center all hero text */
+  .hero-content-art {
+    text-align: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .hero-title-art { text-align: center; }
+  .hero-desc-art { text-align: center; max-width: 540px; }
+  .hero-btns-art { justify-content: center; }
+  .hero-proof-strip { justify-content: center; }
+  .art-label { align-self: center; }
+  .art-frame-wrapper { max-width: 340px; }
+}
+
+@media (max-width: 600px) {
+  .float-badge-top { display: none; }
+  .float-badge-bottom { display: none; }
+  .hero-proof-strip { gap: 14px; }
+  .proof-number { font-size: 1.2rem; }
+  .btn-art-primary, .btn-art-ghost { padding: 14px 22px; font-size: 0.95rem; }
+  .hero-title-art { font-size: clamp(2rem, 8vw, 3rem); }
+}
+
+/* =====================================================
+   PREMIUM GLOBAL UI ENHANCEMENTS — Senior UI/UX Level
+   ===================================================== */
+
+/* Upgrade heading typography with Cormorant display */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+body.rtl h1, body.rtl h2, body.rtl h3 {
+  font-family: var(--font-heading-ar);
+}
+
+/* Hero title uses display font at max size */
+.hero-title-art {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.6rem, 5.5vw, 5rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 1.6rem;
+}
+body.rtl .hero-title-art {
+  font-family: var(--font-heading-ar);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.3;
+}
+
+/* Cormorant italic for highlight span */
+.title-brush-underline {
+  font-style: italic;
+  color: var(--rose);
+}
+
+/* Upgraded section title */
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+body.rtl .section-title {
+  font-family: var(--font-heading-ar);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+/* Premium glass card upgrade */
+.glass-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-glow);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: var(--transition-smooth);
+  will-change: transform, box-shadow;
+}
+.glass-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+/* Upgrade course cards */
+.course-card .glass-card {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+.course-image {
+  position: relative;
+  overflow: hidden;
+}
+.course-image img {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.course-card:hover .course-image img {
+  transform: scale(1.06);
+}
+
+/* Section subtitle premium style */
+.section-subtitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rose);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.section-subtitle::before,
+.section-subtitle::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--rose);
+  opacity: 0.5;
+}
+
+/* Admin nav link — premium pill style */
+.nav-link-admin {
+  background: rgba(201, 116, 143, 0.1);
+  border: 1px solid rgba(201, 116, 143, 0.25);
+  padding: 5px 14px !important;
+  border-radius: 30px;
+  font-size: 0.85rem !important;
+  transition: var(--transition-fast) !important;
+}
+.nav-link-admin:hover {
+  background: rgba(201, 116, 143, 0.18) !important;
+}
+
+/* Premium btn upgrades */
+.btn-primary {
+  background: var(--gradient-primary);
+  border-radius: 30px;
+  box-shadow: 0 6px 20px rgba(201,116,143,0.28);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: var(--transition-spring) !important;
+}
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 32px rgba(201,116,143,0.38);
+}
+.btn-secondary {
+  border-radius: 30px;
+  font-weight: 500;
+}
+
+/* Testimonial card upgrade */
+.testimonial-card .glass-card,
+.review-card .glass-card {
+  border-left: 3px solid var(--rose);
+}
+
+/* FAQ hover upgrade */
+.faq-item:hover {
+  border-color: rgba(201,116,143,0.3);
+}
+
+/* Smooth scroll offset for fixed header */
+[id] { scroll-margin-top: 90px; }
+
+/* Utility: shine text */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Performance: GPU-accelerate animated elements */
+.float-badge,
+.ornament-ring,
+.petal,
+.float-tool-element {
+  will-change: transform;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
