@@ -79,97 +79,193 @@
         <button class="hamburger" aria-label="Toggle menu">
           <span></span>
           <span></span>
-          <span></span>
-        </button>
+          <s  <!-- ==========================================
+       HERO SECTION — Immersive Art Canvas
+       ========================================== -->
+  <section class="hero hero-art" id="hero-section">
+
+    <!-- SVG Brush Stroke Background -->
+    <div class="hero-brush-bg" aria-hidden="true">
+      <svg class="brush-svg brush-top" viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <path d="M0,80 C200,20 400,160 700,60 C1000,-40 1200,120 1440,80 L1440,0 L0,0 Z" fill="url(#brushGrad1)" opacity="0.18"/>
+        <defs>
+          <linearGradient id="brushGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#D4A5A5"/>
+            <stop offset="50%" stop-color="#C9748F"/>
+            <stop offset="100%" stop-color="#A0522D"/>
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <!-- Paint Drips (CSS only, no JS) -->
+      <div class="paint-drips" aria-hidden="true">
+        <span class="drip" style="left:8%;--drip-h:80px;--drip-d:0.2s;--drip-c:#C9748F44"></span>
+        <span class="drip" style="left:18%;--drip-h:55px;--drip-d:0.7s;--drip-c:#D4A5A533"></span>
+        <span class="drip" style="left:32%;--drip-h:100px;--drip-d:0.4s;--drip-c:#A0522D33"></span>
+        <span class="drip" style="left:55%;--drip-h:65px;--drip-d:1.1s;--drip-c:#C9748F33"></span>
+        <span class="drip" style="left:72%;--drip-h:90px;--drip-d:0.3s;--drip-c:#D4A5A533"></span>
+        <span class="drip" style="left:88%;--drip-h:50px;--drip-d:0.9s;--drip-c:#A0522D44"></span>
+      </div>
+
+      <!-- Ornamental Islamic Pattern Ring -->
+      <div class="ornament-ring" aria-hidden="true">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <g opacity="0.08" stroke="#C9748F" stroke-width="1" fill="none">
+            <circle cx="200" cy="200" r="180"/>
+            <circle cx="200" cy="200" r="150"/>
+            <circle cx="200" cy="200" r="120"/>
+            <polygon points="200,30 370,145 370,255 200,370 30,255 30,145" />
+            <polygon points="200,60 340,155 340,245 200,340 60,245 60,155" />
+            <line x1="200" y1="20" x2="200" y2="380"/>
+            <line x1="20" y1="200" x2="380" y2="200"/>
+            <line x1="57" y1="57" x2="343" y2="343"/>
+            <line x1="343" y1="57" x2="57" y2="343"/>
+            <path d="M200,30 A170,170 0 0,1 370,200 A170,170 0 0,1 200,370" stroke-dasharray="4,8"/>
+          </g>
+        </svg>
       </div>
     </div>
-  </header>
 
-  <!-- ==========================================
-       HERO SECTION
-       ========================================== -->
-  <section class="hero">
-    <!-- Full-width Relief Canvas Background -->
-    <div class="hero-bg-canvas">
-      <img src="assets/222-removebg-preview.png" alt="Textured Flower Relief Canvas" class="hero-bg-img">
-      <div class="hero-bg-overlay"></div>
+    <!-- Floating petal emitters (CSS only) -->
+    <div class="rose-petals-container" aria-hidden="true">
+      <span class="petal"></span><span class="petal"></span><span class="petal"></span>
+      <span class="petal"></span><span class="petal"></span><span class="petal"></span>
     </div>
 
-    <!-- A) Floating rose petals background effect -->
-    <div class="rose-petals-container">
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-      <span class="petal"></span>
-    </div>
-    <div class="bg-glow-purple" style="top: 10%; left: 5%;"></div>
-    <div class="bg-glow-blue" style="bottom: 10%; right: 5%;"></div>
+    <div class="container hero-grid-art">
+      <!-- LEFT: Text Content -->
+      <div class="hero-content-art fade-up visible">
 
-    <div class="container hero-grid">
-      <div class="hero-content fade-up visible">
-        <div class="badge">
-          <span class="badge-dot"></span>
-          <span class="lang-en">PREMIUM CREATIVE EDUCATION</span>
-          <span class="lang-ar">تعليم إبداعي فاخر</span>
+        <!-- Artistic Label -->
+        <div class="art-label">
+          <span class="art-label-dot"></span>
+          <span class="lang-en">RELIEF PASTE · TEXTURE ART · 3D CANVAS</span>
+          <span class="lang-ar">معجون بارز · فن الملمس · كانفاس ثلاثي الأبعاد</span>
         </div>
 
-        <h1 class="hero-title">
-          <span class="lang-en">Bring Canvases to Life With <span>flower art</span></span>
-          <span class="lang-ar">احيي لوحاتك الفنية مع <span>تكتشر آرت</span></span>
+        <h1 class="hero-title-art">
+          <span class="lang-en">
+            Where Canvas
+            <span class="title-brush-underline">Becomes Art</span>
+          </span>
+          <span class="lang-ar">
+            حيث تتحوّل اللوحة
+            <span class="title-brush-underline">إلى فن</span>
+          </span>
         </h1>
 
-        <p class="hero-desc">
-          <span class="lang-en">Master the therapeutic art of relief paste sculpting and textured 3D canvas art with Fatma. Watch free intros, purchase lifetime access, and learn directly via private Telegram channels.</span>
-          <span class="lang-ar">احترفي فن التشكيل بالمعجون البارز واللوحات ثلاثية الأبعاد مع الفنانة فاطمة حافظ. شاهدي مقدمة الكورس مجاناً، واحصلي على وصول مدى الحياة، وابدأي التعلم مباشرة عبر قنوات تليجرام خاصة ومغلقة.</span>
+        <p class="hero-desc-art">
+          <span class="lang-en">Master relief paste sculpting & textured 3D canvas art with <strong>Fatma Hafez</strong>. Lifetime access via private Telegram.</span>
+          <span class="lang-ar">احترفي فن التشكيل بالمعجون البارز واللوحات ثلاثية الأبعاد مع <strong>الفنانة فاطمة حافظ</strong>. وصول مدى الحياة عبر تليجرام الخاص.</span>
         </p>
 
-        <div class="hero-btns">
-          <a href="plans.html" class="btn btn-primary">
-            <span class="lang-en">Browse Learning Plans</span>
-            <span class="lang-ar">تصفح خطط التعلم</span>
-            <i class="fa-solid fa-arrow-right btn-icon"></i>
+        <!-- CTA Buttons -->
+        <div class="hero-btns-art">
+          <a href="plans.html" class="btn-art-primary">
+            <span class="lang-en">Explore Courses</span>
+            <span class="lang-ar">استعرضي الدورات</span>
+            <svg class="btn-art-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </a>
-          <a href="https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz" target="_blank" class="btn btn-secondary">
-            <i class="fa-solid fa-play btn-icon"></i>
-            <span class="lang-en">Watch Platform Teaser</span>
-            <span class="lang-ar">شاهد العرض الترويجي</span>
+          <a href="https://www.instagram.com/reel/DaDKc5vNl44/?igsh=ZDVxamR1YjFwMGEz" target="_blank" rel="noopener" class="btn-art-ghost">
+            <svg class="play-icon-art" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
+              <polygon points="10,8 18,12 10,16" fill="currentColor"/>
+            </svg>
+            <span class="lang-en">Watch Teaser</span>
+            <span class="lang-ar">شاهدي العرض</span>
           </a>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat-item">
-            <h3>500+</h3>
-            <p>
-              <span class="lang-en">Active Artists</span>
-              <span class="lang-ar">متدربة نشطة</span>
-            </p>
+        <!-- Social Proof Strip -->
+        <div class="hero-proof-strip">
+          <div class="proof-item">
+            <span class="proof-number">500+</span>
+            <span class="proof-label lang-en">Happy Artists</span>
+            <span class="proof-label lang-ar">فنانة سعيدة</span>
           </div>
-          <div class="stat-item">
-            <h3>4.9/5</h3>
-            <p>
-              <span class="lang-en">Student Rating</span>
-              <span class="lang-ar">تقييم المتدربات</span>
-            </p>
+          <span class="proof-divider"></span>
+          <div class="proof-item">
+            <span class="proof-number">4.9★</span>
+            <span class="proof-label lang-en">Rating</span>
+            <span class="proof-label lang-ar">التقييم</span>
           </div>
-          <div class="stat-item">
-            <h3>100%</h3>
-            <p>
-              <span class="lang-en">Telegram Delivery</span>
-              <span class="lang-ar">تسليم عبر تليجرام</span>
-            </p>
+          <span class="proof-divider"></span>
+          <div class="proof-item">
+            <span class="proof-number">100%</span>
+            <span class="proof-label lang-en">Lifetime Access</span>
+            <span class="proof-label lang-ar">وصول دائم</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Artwork Showcase -->
+      <div class="hero-visual-art fade-up visible">
+        <!-- Ornate Frame -->
+        <div class="art-frame-wrapper">
+          <svg class="art-frame-svg" viewBox="0 0 340 420" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Outer border -->
+            <rect x="8" y="8" width="324" height="404" rx="4" stroke="#C9748F" stroke-width="1.5" opacity="0.4"/>
+            <!-- Inner border -->
+            <rect x="18" y="18" width="304" height="384" rx="2" stroke="#A0522D" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+            <!-- Corner ornaments -->
+            <g fill="#C9748F" opacity="0.5">
+              <path d="M8,8 L28,8 L8,28 Z"/>
+              <path d="M332,8 L312,8 L332,28 Z"/>
+              <path d="M8,412 L28,412 L8,392 Z"/>
+              <path d="M332,412 L312,412 L332,392 Z"/>
+            </g>
+            <!-- Center diamond -->
+            <g transform="translate(170,214)" stroke="#C9748F" stroke-width="1" fill="none" opacity="0.35">
+              <path d="M0,-12 L12,0 L0,12 L-12,0 Z"/>
+              <circle r="20"/>
+            </g>
+          </svg>
+
+          <!-- Main Artwork Image -->
+          <div class="art-canvas-frame">
+            <img
+              src="assets/222-removebg-preview.png"
+              alt="Relief paste flower artwork by Fatma Hafez"
+              class="hero-artwork-img"
+              loading="eager"
+              fetchpriority="high"
+              width="420"
+              height="480"
+            >
+            <!-- Paint splash overlay -->
+            <div class="paint-splash-overlay" aria-hidden="true">
+              <span class="splash s1"></span>
+              <span class="splash s2"></span>
+              <span class="splash s3"></span>
+            </div>
+          </div>
+
+          <!-- Floating Badge -->
+          <div class="float-badge float-badge-top">
+            <i class="fa-solid fa-palette"></i>
+            <span class="lang-en">Handcrafted Art</span>
+            <span class="lang-ar">فن يدوي خالص</span>
+          </div>
+          <div class="float-badge float-badge-bottom">
+            <i class="fa-brands fa-telegram"></i>
+            <span class="lang-en">Telegram Delivery</span>
+            <span class="lang-ar">تسليم عبر تليجرام</span>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Bottom Wave -->
+    <div class="hero-wave-bottom" aria-hidden="true">
+      <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60 Z" fill="var(--bg-secondary)" opacity="0.6"/>
+      </svg>
+    </div>
   </section>
+
+
 
   <!-- ==========================================
        NEW CAROUSEL SECTION
@@ -886,6 +982,7 @@
 
   <!-- Main JavaScript File -->
  <script src="js/main.js"></script>
+<script type="module" src="js/checkout.js"></script>
 <script type="module" src="js/firebase-site.js"></script>
 </body>
 

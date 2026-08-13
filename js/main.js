@@ -18,10 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initMuseumDecorations();
   if (window.initCarousel) window.initCarousel();
 
-  // Load premium 3D living art studio environment dynamically on all pages
-  const artScript = document.createElement('script');
-  artScript.src = 'js/art-studio.js';
-  document.body.appendChild(artScript);
+  // Lazy load premium 3D living art studio environment ONLY on desktop and after page load
+  if (window.innerWidth > 768) {
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => loadArtStudio());
+    } else {
+      setTimeout(() => loadArtStudio(), 3000);
+    }
+  }
+
+  function loadArtStudio() {
+    const artScript = document.createElement('script');
+    artScript.src = 'js/art-studio.js';
+    artScript.defer = true;
+    document.body.appendChild(artScript);
+  }
 });
 
 /* ==========================================
