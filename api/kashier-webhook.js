@@ -75,17 +75,20 @@ module.exports = async function handler(req, res) {
 
       const isValid = verifyWebhookSignature(rawBody, resolvedSignature);
       if (!isValid) {
-        logger.warn("Kashier webhook signature verification failed — processing anyway (test mode)", {
+        logger.error("Kashier webhook signature verification failed", {
           orderId: resolvedOrderId
         });
-        // In test mode, we continue processing even if signature fails
-        // In production, uncomment the lines below:
-        // return res.status(403).send("Forbidden: Invalid signature");
+        if (process.env.NODE_ENV === "production" || process.env.ENFORCE_WEBHOOK_SIGNATURE !== "false") {
+          return res.status(403).send("Forbidden: Invalid signature");
+        }
       } else {
         logger.info("Kashier webhook signature verified successfully");
       }
     } else {
-      logger.warn("Kashier webhook received without signature — skipping verification (test mode)");
+      logger.warn("Kashier webhook received without signature");
+      if (process.env.NODE_ENV === "production" || process.env.ENFORCE_WEBHOOK_SIGNATURE !== "false") {
+        return res.status(403).send("Forbidden: Missing signature");
+      }
     }
 
     // Map Kashier status to internal status

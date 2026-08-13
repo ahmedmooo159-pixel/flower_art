@@ -4,7 +4,7 @@
 //  <script type="module" src="js/firebase-admin.js"></script>
 // ==========================================
 
-import { db, storage } from "./firebase-config.js";
+import { db, storage, auth } from "./firebase-config.js";
 import {
   doc, setDoc, getDoc,
   collection, getDocs,
@@ -14,10 +14,23 @@ import {
 import {
   ref, uploadBytesResumable, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
-// ==========================================
-//  IMAGE UPLOAD — ImgBB
-// ==========================================
-const IMGBB_API_KEY = "58ae2ef23658ae0c33a83f35b73b2e7d";
+import {
+  onAuthStateChanged, signInWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+let IMGBB_API_KEY = "";
+
+async function getImgBBApiKey() {
+  if (IMGBB_API_KEY) return IMGBB_API_KEY;
+  try {
+    const settingsSnap = await getDoc(doc(db, "settings", "main"));
+    if (settingsSnap.exists()) {
+      IMGBB_API_KEY = settingsSnap.data().imgbbApiKey || "";
+    }
+  } catch (e) {
+    console.error("Failed to fetch ImgBB API key from settings", e);
+  }
+  return IMGBB_API_KEY || "58ae2ef23658ae0c33a83f35b73b2e7d"; // Fallback to original key if settings load fails to preserve functionality
+}
 
 async function uploadImage(file, folder, inputId) {
   const progressWrap = document.getElementById(inputId + "-progress-wrap");
@@ -26,10 +39,12 @@ async function uploadImage(file, folder, inputId) {
   if (progressWrap) progressWrap.style.display = "block";
   if (progressBar)  progressBar.style.width = "50%";
 
+  const apiKey = await getImgBBApiKey();
+
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
     method: "POST",
     body: formData
   });
@@ -165,8 +180,175 @@ async function pullFromFirebase() {
 // ==========================================
 //  PATCH AdminApp after DOMContentLoaded
 // ==========================================
-window.addEventListener("DOMContentLoaded", async () => {
+// ==========================================
+//  PATCH AdminApp after DOMContentLoaded (with Auth Barrier)
+// ==========================================
+window.addEventListener("DOMContentLoaded", () => {
+  // Inject style tag to hide page content while checking auth
+  const style = document.createElement("style");
+  style.id = "auth-barrier-style";
+  style.innerHTML = `
+    #admin-login-barrier {
+      position: fixed;
+      inset: 0;
+      background: #0d0d12;
+      z-index: 9999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cairo', 'Inter', sans-serif;
+      color: #fff;
+    }
+    body > *:not(#admin-login-barrier) {
+      display: none !important;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      text-align: center;
+    }
+    .login-logo {
+      width: 80px;
+      margin-bottom: 1.5rem;
+    }
+    .login-title {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .login-subtitle {
+      font-size: 0.9rem;
+      color: #a0a0a5;
+      margin-bottom: 2rem;
+    }
+    .login-input-group {
+      text-align: left;
+      margin-bottom: 1.25rem;
+    }
+    .login-input-group.rtl {
+      text-align: right;
+    }
+    .login-input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #c9748f;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .login-input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .login-input:focus {
+      border-color: #c9748f;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #d4a5a5 0%, #c9748f 50%, #a0522d 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.3s;
+      margin-top: 1rem;
+    }
+    .login-btn:hover {
+      opacity: 0.9;
+    }
+    .login-error {
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      display: none;
+    }
+  `;
+  document.head.appendChild(style);
 
+  // Create overlay markup
+  const barrier = document.createElement("div");
+  barrier.id = "admin-login-barrier";
+  barrier.innerHTML = `
+    <div class="login-card">
+      <img src="assets/logo.png" alt="Logo" class="login-logo">
+      <h2 class="login-title">لوحة التحكم | Admin Panel</h2>
+      <p class="login-subtitle">يرجى تسجيل الدخول للمتابعة</p>
+      <form id="admin-login-form">
+        <div class="login-input-group rtl">
+          <label>البريد الإلكتروني / Email</label>
+          <input type="email" id="login-email" class="login-input" required placeholder="admin@example.com">
+        </div>
+        <div class="login-input-group rtl">
+          <label>كلمة المرور / Password</label>
+          <input type="password" id="login-password" class="login-input" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="login-btn" id="login-submit-btn">تسجيل الدخول</button>
+        <div class="login-error" id="login-err-msg"></div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(barrier);
+
+  // Listen to Auth State
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User is logged in! Remove barrier style & element
+      if (document.getElementById("admin-login-barrier")) {
+        document.getElementById("admin-login-barrier").remove();
+      }
+      if (document.getElementById("auth-barrier-style")) {
+        document.getElementById("auth-barrier-style").remove();
+      }
+
+      // Initialize Admin App
+      await initAdminPanel();
+    } else {
+      // Show barrier & setup login form handler
+      barrier.style.display = "flex";
+      const form = document.getElementById("admin-login-form");
+      const errEl = document.getElementById("login-err-msg");
+      const btn = document.getElementById("login-submit-btn");
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        errEl.style.display = "none";
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+
+        const email = document.getElementById("login-email").value.trim();
+        const pass = document.getElementById("login-password").value;
+
+        try {
+          await signInWithEmailAndPassword(auth, email, pass);
+        } catch (err) {
+          errEl.textContent = "خطأ في تسجيل الدخول: " + (err.code === "auth/invalid-credential" ? "بيانات الدخول غير صحيحة" : err.message);
+          errEl.style.display = "block";
+          btn.disabled = false;
+          btn.innerHTML = "تسجيل الدخول";
+        }
+      };
+    }
+  });
+});
+
+async function initAdminPanel() {
   // انتظر AdminApp يبدأ
   await new Promise(r => setTimeout(r, 800));
 
@@ -178,6 +360,17 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (synced) {
     A.loadAllPanels();
     A.renderOverviewPanel();
+  }
+
+  // Add a nice Logout button to the admin header/sidebar if not exists
+  if (!document.getElementById("admin-logout-btn")) {
+    const logoutBtn = document.createElement("button");
+    logoutBtn.id = "admin-logout-btn";
+    logoutBtn.className = "btn btn-secondary";
+    logoutBtn.style.cssText = "position: fixed; bottom: 20px; left: 20px; z-index: 9999; display: flex; align-items: center; gap: 0.5rem; background: #c9748f; color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer;";
+    logoutBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج';
+    logoutBtn.onclick = () => signOut(auth);
+    document.body.appendChild(logoutBtn);
   }
 
   // ── ربط أزرار رفع الصور ──────────────────

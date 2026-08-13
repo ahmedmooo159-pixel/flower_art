@@ -221,7 +221,10 @@ function buildCourseHTML(c, id) {
               <span class="lang-en">Price</span>
               <span class="lang-ar">السعر</span>
             </div>
-            <div class="price-value">$${esc(c.price || 0)}<span>.00</span></div>
+            <div class="price-value" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue);">
+              <span class="lang-en">${esc(c.price || 0)} EGP</span>
+              <span class="lang-ar">${esc(c.price || 0)} ج.م</span>
+            </div>
           </div>
         </div>
       </div>

@@ -11,41 +11,6 @@ const { initiatePayment: initiatePaymobPayment } = require("../lib/paymob/paymob
 const { initiatePayment: initiateKashierPayment } = require("../lib/kashier/kashierService");
 const logger = require("../lib/logger");
 
-// ---- CORS Configuration ----
-// const ALLOWED_ORIGINS = [
-//   "https://ahmedmooo159-pixel.github.io",
-//   "https://flower-5f122.web.app",
-//   "https://flower-5f122.firebaseapp.com",
-//   "http://localhost:5000",
-//   "http://localhost:5500",
-//   "http://127.0.0.1:5500",
-//   "http://127.0.0.1:5000"
-// ];
-
-// function setCorsHeaders(req, res) {
-//   const origin = req.headers.origin || "";
-//   if (ALLOWED_ORIGINS.includes(origin)) {
-//     res.setHeader("Access-Control-Allow-Origin", origin);
-//   }
-//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-//   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//   res.setHeader("Access-Control-Max-Age", "3600");
-// }
-
-const ALLOWED_ORIGINS = [
-  "https://ahmedmooo159-pixel.github.io",
-  "https://flower-5f122.web.app",
-  "https://flower-5f122.firebaseapp.com",
-  "http://localhost:5000",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://127.0.0.1:5000"
-];
-
-// ✅ يسمح بأي preview/production URL تابع لمشروعك على Vercel
-// (flower-art-opal.vercel.app, flower-cp0l6u7n6-ahmed-mourad.vercel.app, إلخ)
-const VERCEL_PROJECT_PATTERN = /^https:\/\/flower(-[a-z0-9]+)?(-ahmed-mourad)?\.vercel\.app$/;
-
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin || "";
 
@@ -116,6 +81,25 @@ module.exports = async function handler(req, res) {
         success: false,
         error: "Invalid gateway. Must be 'paymob' or 'kashier'."
       });
+    }
+
+    // Verify price against Firestore database configuration
+    if (courseId) {
+      const courseSnap = await db.collection("courses").doc(String(courseId)).get();
+      if (!courseSnap.exists) {
+        return res.status(400).json({
+          success: false,
+          error: "Course not found."
+        });
+      }
+      const courseData = courseSnap.data();
+      const dbPrice = Number(courseData.price || 0);
+      if (Math.abs(dbPrice - price) > 0.01) {
+        return res.status(400).json({
+          success: false,
+          error: "Price mismatch. Please refresh the page and try again."
+        });
+      }
     }
 
     const amountCents = Math.round(price * 100);
@@ -232,7 +216,7 @@ module.exports = async function handler(req, res) {
     });
     return res.status(500).json({
       success: false,
-      error: error.message || "Internal server error"
+      error: "Internal server error. Please try again later."
     });
   }
 };

@@ -35,7 +35,10 @@ module.exports = async function handler(req, res) {
         return res.status(403).send("Forbidden: Invalid HMAC signature");
       }
     } else {
-      logger.warn("Webhook received without HMAC — skipping verification (test mode)");
+      logger.warn("Webhook received without HMAC");
+      if (process.env.NODE_ENV === "production" || process.env.ENFORCE_WEBHOOK_SIGNATURE !== "false") {
+        return res.status(403).send("Forbidden: Missing HMAC signature");
+      }
     }
 
     // Extract relevant fields

@@ -4,7 +4,7 @@
 //  Verifies the student's access code for a course
 // ==========================================
 
-const { db } = require("../lib/firebase-admin");
+const { db } = require("../lib/firebase");
 
 const ALLOWED_ORIGINS = [
   "https://ahmedmooo159-pixel.github.io",

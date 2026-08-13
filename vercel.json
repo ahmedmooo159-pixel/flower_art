@@ -12,6 +12,20 @@
     {
       "source": "/api/kashier-webhook",
       "destination": "/api/kashier-webhook.js"
+    },
+    {
+      "source": "/api/verify-access",
+      "destination": "/api/verify-access.js"
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/404.html"
     }
   ]
 }

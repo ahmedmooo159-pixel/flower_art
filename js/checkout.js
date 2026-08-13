@@ -188,15 +188,48 @@ function showCheckoutModal(courseTitle, onConfirm) {
     setTimeout(() => overlay.remove(), 300);
   };
 
+  function showError(input, msg) {
+    clearError(input);
+    input.style.borderColor = "#ff4d4d";
+    const err = document.createElement("span");
+    err.className = "checkout-field-error";
+    err.style.cssText = "color: #ff4d4d; font-size: 0.8rem; margin-top: 4px; display: block;";
+    err.textContent = msg;
+    input.parentNode.appendChild(err);
+    
+    input.addEventListener("input", () => clearError(input), { once: true });
+  }
+
+  function clearError(input) {
+    input.style.borderColor = "";
+    const existing = input.parentNode.querySelector(".checkout-field-error");
+    if (existing) existing.remove();
+  }
+
   // Helper: handle gateway selection
   async function handleGatewayClick(gateway) {
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
 
-    if (!name || !email) {
-      alert(isRTL ? "يرجى ملء جميع الحقول المطلوبة." : "Please fill out all fields.");
-      return;
+    let hasError = false;
+    clearError(nameInput);
+    clearError(emailInput);
+
+    if (!name) {
+      showError(nameInput, isRTL ? "يرجى إدخال الاسم الكامل." : "Please enter your full name.");
+      hasError = true;
     }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      showError(emailInput, isRTL ? "يرجى إدخال البريد الإلكتروني." : "Please enter your email address.");
+      hasError = true;
+    } else if (!emailRegex.test(email)) {
+      showError(emailInput, isRTL ? "البريد الإلكتروني غير صالح." : "Please enter a valid email address.");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     actions.style.display = "none";
     gatewayLabel.style.display = "none";

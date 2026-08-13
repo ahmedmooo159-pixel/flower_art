@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found — Tecture Art by Fatma</title>
+  <meta name="description" content="The page you are looking for does not exist. Return to the Tecture Art home page.">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Shared CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .error-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .error-card {
+      max-width: 540px;
+      padding: 3rem 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-neon);
+    }
+    .error-code {
+      font-size: clamp(5rem, 18vw, 9rem);
+      font-family: var(--font-heading-en);
+      font-weight: 900;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .error-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+    .error-desc {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+    .error-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .error-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      display: block;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       HEADER & NAVIGATION
+       ========================================== -->
+  <header class="header">
+    <div class="container nav-container">
+      <a href="index.html" class="logo" id="main-logo">
+        <img src="assets/logo.png" alt="Tecture Art Logo" class="logo-img">
+      </a>
+      <div class="nav-actions">
+        <button class="lang-toggle" aria-label="Toggle language">
+          <i class="fa-solid fa-globe lang-toggle-icon"></i>
+          <span class="lang-en">العربية</span>
+          <span class="lang-ar">English</span>
+        </button>
+        <a href="index.html" class="btn btn-secondary lang-en">Home</a>
+        <a href="index.html" class="btn btn-secondary lang-ar">الرئيسية</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       404 CONTENT
+       ========================================== -->
+  <main class="error-page">
+    <div class="error-card glass-card fade-up visible">
+      <span class="error-icon">
+        <i class="fa-solid fa-palette"></i>
+      </span>
+      <div class="error-code">404</div>
+      <h1 class="error-title">
+        <span class="lang-en">Page Not Found</span>
+        <span class="lang-ar">الصفحة غير موجودة</span>
+      </h1>
+      <p class="error-desc">
+        <span class="lang-en">
+          Oops! It looks like this canvas is empty. The page you're looking for doesn't exist or has been moved.
+        </span>
+        <span class="lang-ar">
+          عذراً! يبدو أن هذه اللوحة فارغة. الصفحة التي تبحث عنها غير موجودة أو تم نقلها.
+        </span>
+      </p>
+      <div class="error-actions">
+        <a href="index.html" class="btn btn-primary">
+          <i class="fa-solid fa-house"></i>
+          <span class="lang-en">Go Home</span>
+          <span class="lang-ar">الصفحة الرئيسية</span>
+        </a>
+        <a href="plans.html" class="btn btn-secondary">
+          <i class="fa-solid fa-book-open"></i>
+          <span class="lang-en">Browse Courses</span>
+          <span class="lang-ar">تصفح الدورات</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       FOOTER
+       ========================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p class="lang-en">© 2025 Tecture Art by Fatma Hafez. All rights reserved.</p>
+        <p class="lang-ar">© 2025 Tecture Art بواسطة فاطمة حافظ. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+  <script type="module" src="js/firebase-site.js"></script>
+</body>
+</html>

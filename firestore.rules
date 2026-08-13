@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is logged in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Artworks: Anyone can read, only authenticated admin users can write
+    match /artworks/{artworkId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Courses: Anyone can read, only authenticated admin users can write
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Reviews: Anyone can read, only authenticated admin users can write
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // FAQ: Anyone can read, only authenticated admin users can write
+    match /faq/{faqId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Settings: Anyone can read, only authenticated admin users can write
+    match /settings/{settingsId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Colors: Anyone can read, only authenticated admin users can write
+    match /colors/{colorId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Payments config: Anyone can read (to check config), only authenticated admin users can write
+    match /payments/config {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Transactions and user payment history: Restricted to Server-side Functions only (read/write = false)
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
+
+    // Enrollments & Access Verification data: Server-side ONLY
+    match /enrollments/{enrollmentId} {
+      allow read, write: if false;
+    }
+  }
+}
